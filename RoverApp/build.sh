@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+# Mirror upstream rover/ assets into the SPM resource directory so that
+# `.copy("Resources")` in Package.swift sees real files (it does not
+# dereference symlinks pointing outside the package).
+SRC_ASSETS="../rover/Resources"
+DST_ASSETS="Sources/RoverApp/Resources"
+if [[ -d "$SRC_ASSETS" ]]; then
+    echo "→ syncing assets $SRC_ASSETS → $DST_ASSETS"
+    mkdir -p "$DST_ASSETS"
+    rsync -a --delete --exclude=".DS_Store" "$SRC_ASSETS/" "$DST_ASSETS/"
+fi
+
+CONFIG="${CONFIG:-debug}"
+APP_NAME="Rover"
+EXEC_NAME="RoverApp"
+APP_BUNDLE="$APP_NAME.app"
+BUILD_DIR=".build"
+
+echo "→ swift build ($CONFIG)"
+swift build -c "$CONFIG"
+
+BIN_PATH="$(swift build -c "$CONFIG" --show-bin-path)"
+EXEC_PATH="$BIN_PATH/$EXEC_NAME"
+
+if [[ ! -f "$EXEC_PATH" ]]; then
+    echo "✗ executable not found at $EXEC_PATH" >&2
+    exit 1
+fi
+
+echo "→ assembling $APP_BUNDLE"
+rm -rf "$APP_BUNDLE"
+mkdir -p "$APP_BUNDLE/Contents/MacOS"
+mkdir -p "$APP_BUNDLE/Contents/Resources"
+
+cp "$EXEC_PATH" "$APP_BUNDLE/Contents/MacOS/$EXEC_NAME"
+cp Info.plist "$APP_BUNDLE/Contents/Info.plist"
+
+# SwiftPM places per-target resources in a *.bundle directory next to the binary.
+# The auto-generated `Bundle.module` accessor looks for the resource bundle at
+# `Bundle.main.bundleURL/<bundle-name>` — i.e. directly inside `Rover.app/`, NOT
+# inside `Contents/Resources/`. So we mirror it there.
+RES_BUNDLE="$BIN_PATH/RoverApp_RoverApp.bundle"
+if [[ -d "$RES_BUNDLE" ]]; then
+    rm -rf "$APP_BUNDLE/RoverApp_RoverApp.bundle"
+    cp -R "$RES_BUNDLE" "$APP_BUNDLE/RoverApp_RoverApp.bundle"
+fi
+
+echo "✓ built $APP_BUNDLE"
+echo "  open $APP_BUNDLE   # to launch"

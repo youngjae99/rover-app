@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+*.swp
+*.swo
+
+# Swift / SwiftPM build artifacts
+RoverApp/.build/
+RoverApp/.swiftpm/
+RoverApp/Package.resolved
+
+# Generated app bundle + dmg
+RoverApp/Rover.app/
+RoverApp/Rover.dmg
+*.app
+*.dmg
+*.zip
+
+# Synced from rover/Resources by build.sh — regenerated on each build
+RoverApp/Sources/RoverApp/Resources/
+
+# Xcode (in case anyone opens Package.swift in Xcode)
+*.xcodeproj/xcuserdata/
+xcuserdata/
+DerivedData/
+
+# Original C# project build outputs (we keep sources, exclude build outputs)
+rover/bin/
+rover/obj/
+
+# Editor / tooling
+.vscode/
+.idea/
+*.iml

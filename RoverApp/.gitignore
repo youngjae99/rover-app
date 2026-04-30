@@ -1,0 +1,4 @@
+.build/
+.swiftpm/
+Rover.app/
+Sources/RoverApp/Resources/

@@ -1,0 +1,98 @@
+import SwiftUI
+import AppKit
+
+@MainActor
+final class SpriteAnimator: ObservableObject {
+    @Published private(set) var currentImage: NSImage?
+    @Published private(set) var state: RoverState = .idle
+
+    private var clip: AnimationClip?
+    private var frameIndex = 0
+    private var timer: Timer?
+    private var queuedNextState: RoverState?
+    private var idleSwitchTimer: Timer?
+
+    init() {
+        applyState(.idle)
+    }
+
+    func setState(_ next: RoverState) {
+        if next == state, clip != nil { return }
+        applyState(next)
+    }
+
+    private func applyState(_ next: RoverState) {
+        timer?.invalidate()
+        state = next
+        let newClip = AnimationCatalog.shared.clip(for: next)
+        clip = newClip
+        frameIndex = 0
+        currentImage = newClip.frames.first
+        guard newClip.frames.count > 1 else { return }
+        let interval = 1.0 / max(newClip.fps, 1)
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.tick() }
+        }
+        if next == .idle {
+            scheduleIdleVariety()
+        } else {
+            idleSwitchTimer?.invalidate()
+            idleSwitchTimer = nil
+        }
+    }
+
+    private func tick() {
+        guard let clip else { return }
+        frameIndex += 1
+        if frameIndex >= clip.frames.count {
+            if clip.loops {
+                frameIndex = 0
+            } else {
+                timer?.invalidate()
+                if let queued = queuedNextState {
+                    queuedNextState = nil
+                    applyState(queued)
+                } else {
+                    applyState(.idle)
+                }
+                return
+            }
+        }
+        currentImage = clip.frames[frameIndex]
+    }
+
+    private func scheduleIdleVariety() {
+        idleSwitchTimer?.invalidate()
+        let delay = Double.random(in: 5.0...11.0)
+        idleSwitchTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.state == .idle else { return }
+                self.applyState(.idle)
+            }
+        }
+    }
+}
+
+struct RoverSpriteView: View {
+    @StateObject private var animator = SpriteAnimator()
+    @EnvironmentObject var viewModel: AppViewModel
+
+    var body: some View {
+        ZStack {
+            if let img = animator.currentImage {
+                Image(nsImage: img)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+                    .shadow(color: .black.opacity(0.35), radius: 6, x: 0, y: 4)
+            } else {
+                Circle()
+                    .fill(Color.orange.opacity(0.5))
+                    .overlay(Text("rover").font(.caption).foregroundStyle(.white))
+            }
+        }
+        .onReceive(viewModel.$roverState) { newState in
+            animator.setState(newState)
+        }
+    }
+}
