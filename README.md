@@ -1,14 +1,28 @@
 # rover.app
 
+<p align="center">
+  <img src="docs/rover-hero.gif" width="240" alt="Rover talking" />
+</p>
+
 A homage to **Rover**, the yellow Labrador Retriever that lived inside Windows XP's Search Companion (2001). This project resurrects him as a floating macOS desktop pet, powered by Claude Code.
 
-```
-   ___                       _____
-  / _ \  ___  __   __  ___  | || |__
- | (_) ||_ /  \ \ / / / -_) |__   _|
-  \___//___|   \_/   \___|     |_|
-        XP 2001                  2026
-```
+<p align="center">
+  <img src="docs/rover-states.png" width="800" alt="Rover idle, speaking, reading, sleeping" />
+</p>
+
+<p align="center">
+  <em>idle &nbsp;·&nbsp; speak &nbsp;·&nbsp; reading &nbsp;·&nbsp; sleep</em>
+</p>
+
+## Demo
+
+The full app in action (Rover floating on your desktop, opening the bubble, streaming a Claude response):
+
+<!-- Replace this placeholder with the actual recording. Capture with
+     macOS Cmd+Shift+5 (Record Selected Portion), save as docs/demo.mp4
+     or docs/demo.gif, then reference it below. -->
+
+> Demo video coming soon. To capture your own, use Cmd+Shift+5 on macOS, choose Record Selected Portion, frame Rover plus the bubble, and save the file as `docs/demo.mp4`.
 
 ## What is this
 
