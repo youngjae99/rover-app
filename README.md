@@ -1,4 +1,4 @@
-# Rover, Revived (2026)
+# rover.app
 
 A homage to **Rover**, the yellow Labrador Retriever that lived inside Windows XP's Search Companion (2001). This project resurrects him as a floating macOS desktop pet, powered by Claude Code.
 
@@ -41,7 +41,7 @@ This is a nostalgia project. It is not affiliated with Microsoft and has no comm
 
 ### From a DMG (recommended)
 
-1. Download the latest `Rover.dmg` from the [Releases](https://github.com/youngjae99/21st-rover/releases) page.
+1. Download the latest `Rover.dmg` from the [Releases](https://github.com/youngjae99/rover-app/releases) page.
 2. Open the DMG and drag `Rover.app` into `Applications`.
 3. Launch from Launchpad.
 4. Click Rover, or click the paw icon in the menu bar.
@@ -57,8 +57,8 @@ Requirements:
 - The `claude` CLI installed and reachable. The app probes a few common paths automatically (`/Applications/cmux.app/Contents/Resources/bin/claude`, `/opt/homebrew/bin/claude`, `/usr/local/bin/claude`, `~/.claude/local/claude`).
 
 ```bash
-git clone https://github.com/youngjae99/21st-rover.git
-cd 21st-rover/RoverApp
+git clone https://github.com/youngjae99/rover-app.git
+cd rover-app/RoverApp
 ./run.sh
 ```
 
@@ -115,7 +115,7 @@ AppViewModel.handleEvent
 ## Repository layout
 
 ```
-21st-rover/
+rover-app/
   rover/                         original Microsoft Rover assets
     Resources/                   PNG sprites, WAV sounds, EN and RU text files
     Animation.cs                 reference Windows Forms implementation
