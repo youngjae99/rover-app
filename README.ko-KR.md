@@ -193,7 +193,7 @@ ClaudeCodeCLI         CodexCLI         AnthropicComputerUse
 
 공개적으로 추적합니다. 어떤 항목이든 PR 환영.
 
-- [ ] **코드 사이닝 + 노터라이즈** (배포용). 현재 ad-hoc 사이닝까지만 — Gatekeeper 가 첫 실행에 우클릭 → Open 을 요구.
+- [ ] **코드 사이닝 + 노터라이즈** (배포용). 릴리즈 워크플로우는 이미 준비됨 ([docs/SIGNING.md](docs/SIGNING.md)). GitHub Secrets 6개를 채우면 Developer ID + 노터라이즈 모드로 전환. 그 전까지는 ad-hoc DMG 가 빌드되어 Gatekeeper 가 첫 실행에 우클릭 → Open 을 요구.
 - [ ] **Sparkle 자동 업데이트.** 현재는 가벼운 GitHub Releases 기반 버전 체커가 들어있음 (Settings → Advanced → Updates). Sparkle 은 사이닝 트랙과 함께.
 - [x] **권한 버블** — Claude Code 의 `PreToolUse` 훅을 자동 설치 (Settings → Backend 에서 opt-in). Rover 가 꺼져 있으면 Claude 의 터미널 프롬프트로 폴백.
 - [x] **마크다운 렌더링** — assistant 응답이 inline markdown + fenced code block 렌더링.

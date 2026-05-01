@@ -55,13 +55,39 @@ if [[ -d "$RES_BUNDLE" ]]; then
     cp -R "$RES_BUNDLE" "$APP_BUNDLE/RoverApp_RoverApp.bundle"
 fi
 
-# Ad-hoc codesign so macOS TCC keys (Accessibility, Screen Recording)
-# remain stable across rebuilds. We sign the main executable only — the
-# SPM resource bundle lives outside Contents/ and would trip up `--deep`.
-# A stable code hash on the binary is what TCC actually keys on.
-echo "→ codesign (ad-hoc, binary only)"
-codesign --force --sign - "$APP_BUNDLE/Contents/MacOS/$EXEC_NAME" 2>&1 \
-    | grep -v "replacing existing signature" || true
+# Codesign. Two modes:
+#
+#   1. Ad-hoc (default for local dev). Identity = "-". Signs only the
+#      main executable so the SPM resource bundle (which lives next to
+#      Contents/, not inside it) doesn't trip --deep. macOS TCC keys
+#      (Accessibility, Screen Recording) stay stable across rebuilds
+#      because the executable's code hash is what TCC actually pins.
+#
+#   2. Developer ID + hardened runtime (CI release). Set
+#      CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+#      to flip into this mode. Signs --deep so the SPM resource bundle
+#      is covered too, plus --options=runtime --timestamp which Apple
+#      requires before notarytool will accept the DMG.
+SIGN_IDENTITY="${CODESIGN_IDENTITY:--}"
+if [[ "$SIGN_IDENTITY" == "-" ]]; then
+    echo "→ codesign (ad-hoc, binary only)"
+    codesign --force --sign - "$APP_BUNDLE/Contents/MacOS/$EXEC_NAME" 2>&1 \
+        | grep -v "replacing existing signature" || true
+else
+    echo "→ codesign Developer ID + hardened runtime"
+    # Sign inside-out: nested resource bundle first (it lives at
+    # Rover.app/<name>.bundle, not Contents/Resources/, so we can't
+    # rely on --deep alone to find it).
+    if [[ -d "$APP_BUNDLE/RoverApp_RoverApp.bundle" ]]; then
+        codesign --force --options=runtime --timestamp \
+            --sign "$SIGN_IDENTITY" \
+            "$APP_BUNDLE/RoverApp_RoverApp.bundle"
+    fi
+    codesign --force --deep --options=runtime --timestamp \
+        --sign "$SIGN_IDENTITY" \
+        "$APP_BUNDLE"
+    codesign --verify --strict --verbose=2 "$APP_BUNDLE"
+fi
 
 echo "✓ built $APP_BUNDLE"
 echo "  open $APP_BUNDLE   # to launch"

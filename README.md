@@ -215,7 +215,7 @@ For repository layout, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Tracked publicly so contributors can pick something up. PRs welcome on any of these.
 
-- [ ] **Code signing + notarization** for distribution. Local builds are ad-hoc signed (enough to keep TCC stable), but Gatekeeper still requires a right-click Open on first launch from a DMG.
+- [ ] **Code signing + notarization** for distribution. The release workflow is wired ([docs/SIGNING.md](docs/SIGNING.md)) — flips into Developer ID + notarized mode the moment six GitHub Secrets are filled. Until then, ad-hoc DMGs ship and Gatekeeper requires a right-click → Open on first launch.
 - [ ] **Sparkle auto-update.** Currently shipping a lighter GitHub-Releases version checker (Settings → Advanced → Updates). Sparkle waits on the signing pipeline.
 - [x] **Permission bubble** — Claude Code `PreToolUse` hook is auto-installed (opt-in via Settings → Backend) and tool permission asks land as Allow / Deny in the speech bubble. Falls back to Claude's terminal prompt when Rover isn't running.
 - [x] **Markdown rendering** — assistant responses render inline markdown plus fenced code blocks.
