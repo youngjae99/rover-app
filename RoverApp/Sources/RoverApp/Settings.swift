@@ -53,6 +53,17 @@ final class RoverSettings: ObservableObject {
     @Published var cursorObserverEnabled: Bool {
         didSet { save("rover.cursorObserver", cursorObserverEnabled) }
     }
+    /// Do Not Disturb. While on, Rover suppresses sounds, observer
+    /// hints, schedule firings, and the permission bubble (the hook
+    /// returns "ask" so Claude Code falls back to its terminal prompt).
+    /// Triggers and the primary-backend conversation still work — DND
+    /// is for ambient noise, not a kill switch.
+    @Published var dndEnabled: Bool {
+        didSet {
+            save("rover.dnd", dndEnabled)
+            SoundPlayer.shared.enabled = soundEnabled && !dndEnabled
+        }
+    }
     @Published var language: AppLanguage {
         didSet { save("rover.language", language.rawValue) }
     }
@@ -126,6 +137,7 @@ final class RoverSettings: ObservableObject {
         self.customCodexPath = d.string(forKey: "rover.codexCLIPath") ?? ""
         self.permissionBubbleEnabled = (d.object(forKey: "rover.permissionBubble") as? Bool) ?? false
         self.cursorObserverEnabled = (d.object(forKey: "rover.cursorObserver") as? Bool) ?? false
+        self.dndEnabled = (d.object(forKey: "rover.dnd") as? Bool) ?? false
         let storedBackend = d.string(forKey: "rover.backend").flatMap(BackendID.init(rawValue:))
         self.activeBackendId = storedBackend ?? .claudeCodeCLI
 
@@ -142,7 +154,7 @@ final class RoverSettings: ObservableObject {
             self.schedules = []
         }
 
-        SoundPlayer.shared.enabled = self.soundEnabled
+        SoundPlayer.shared.enabled = self.soundEnabled && !self.dndEnabled
     }
 
     private func save<T>(_ key: String, _ value: T) {

@@ -182,6 +182,12 @@ struct SettingsView: View {
             Section(s.sectionBehavior) {
                 Toggle(s.menuShowMenuBar, isOn: $settings.showMenuBarIcon)
                 Toggle(s.menuSound, isOn: $settings.soundEnabled)
+                Toggle(s.menuDND, isOn: $settings.dndEnabled)
+                if settings.dndEnabled {
+                    Text(s.dndHint)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             Section(s.sectionWorkingDirectory) {
                 HStack {

@@ -7,7 +7,7 @@ final class MenuBarController {
     private weak var viewModel: AppViewModel?
     private weak var settingsController: SettingsWindowController?
     private var statusItem: NSStatusItem?
-    private var cancellable: AnyCancellable?
+    private var cancellables: Set<AnyCancellable> = []
 
     init(settings: RoverSettings,
          viewModel: AppViewModel,
@@ -16,11 +16,21 @@ final class MenuBarController {
         self.viewModel = viewModel
         self.settingsController = settingsController
 
-        cancellable = settings.$showMenuBarIcon
+        settings.$showMenuBarIcon
             .receive(on: RunLoop.main)
             .sink { [weak self] visible in
                 self?.apply(visible: visible)
             }
+            .store(in: &cancellables)
+
+        // Refresh the icon glyph + tooltip when DND flips so the menu
+        // bar reflects the live state without waiting for a click.
+        settings.$dndEnabled
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshIcon()
+            }
+            .store(in: &cancellables)
     }
 
     private func apply(visible: Bool) {
@@ -35,14 +45,20 @@ final class MenuBarController {
     private func install() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
-            button.image = NSImage(systemSymbolName: "pawprint.fill", accessibilityDescription: "Rover")
-            button.image?.isTemplate = true
-            button.toolTip = "Rover"
             button.target = self
             button.action = #selector(buttonClicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
         statusItem = item
+        refreshIcon()
+    }
+
+    private func refreshIcon() {
+        guard let button = statusItem?.button else { return }
+        let glyph = settings.dndEnabled ? "moon.fill" : "pawprint.fill"
+        button.image = NSImage(systemSymbolName: glyph, accessibilityDescription: "Rover")
+        button.image?.isTemplate = true
+        button.toolTip = settings.dndEnabled ? "Rover · \(settings.s.dndStatusActive)" : "Rover"
     }
 
     @objc private func buttonClicked(_ sender: Any?) {
@@ -67,6 +83,9 @@ final class MenuBarController {
         menu.addItem(menuItem(title: s.menuAsk, selector: #selector(ask)))
         menu.addItem(menuItem(title: s.menuShowRover, selector: #selector(showWindow)))
         menu.addItem(.separator())
+        let dndItem = menuItem(title: s.menuDND, selector: #selector(toggleDND))
+        dndItem.state = settings.dndEnabled ? .on : .off
+        menu.addItem(dndItem)
         menu.addItem(menuItem(title: s.menuSettings, selector: #selector(openSettings)))
         menu.addItem(.separator())
         menu.addItem(menuItem(title: s.menuQuit, selector: #selector(quit)))
@@ -99,6 +118,10 @@ final class MenuBarController {
 
     @objc private func openSettings() {
         settingsController?.show()
+    }
+
+    @objc private func toggleDND() {
+        settings.dndEnabled.toggle()
     }
 
     @objc private func quit() {

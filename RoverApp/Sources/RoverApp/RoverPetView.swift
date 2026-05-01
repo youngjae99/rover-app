@@ -90,6 +90,7 @@ struct RoverPetView: View {
             .keyboardShortcut("n", modifiers: [.command, .shift])
         Divider()
         Toggle(s.menuSound, isOn: $settings.soundEnabled)
+        Toggle(s.menuDND, isOn: $settings.dndEnabled)
         Toggle(s.menuShowMenuBar, isOn: $settings.showMenuBarIcon)
         Divider()
         Menu(s.menuModelLabel) {
@@ -131,6 +132,11 @@ struct RoverPetView: View {
         soundItem.state = settings.soundEnabled ? .on : .off
         bindToggle(soundItem) { settings.soundEnabled.toggle() }
         menu.addItem(soundItem)
+
+        let dndItem = NSMenuItem(title: s.menuDND, action: nil, keyEquivalent: "")
+        dndItem.state = settings.dndEnabled ? .on : .off
+        bindToggle(dndItem) { settings.dndEnabled.toggle() }
+        menu.addItem(dndItem)
 
         let mbItem = NSMenuItem(title: s.menuShowMenuBar, action: nil, keyEquivalent: "")
         mbItem.state = settings.showMenuBarIcon ? .on : .off

@@ -78,7 +78,13 @@ final class AppViewModel: ObservableObject {
 
     /// Called by `PermissionServer.onRequest`. Pops the bubble open, plays
     /// the attention sound, and parks the request waiting for a click.
+    /// In DND we auto-resolve with `.ask` so Claude Code falls back to
+    /// its terminal prompt without nagging the user through the bubble.
     func handlePermissionRequest(_ req: PermissionRequest) {
+        if settings.dndEnabled {
+            permissionServer?.respond(id: req.id, decision: .ask)
+            return
+        }
         cancelBubbleHide()
         pendingPermission = req
         if case .hidden = bubbleMode { bubbleMode = .input }
@@ -105,6 +111,7 @@ final class AppViewModel: ObservableObject {
     /// own bubble is busy (a streaming primary backend or a pending
     /// permission ask shouldn't get preempted by background activity).
     func handleObserverEvent(_ event: ObserverEvent) {
+        if settings.dndEnabled { return }
         if isStreaming || pendingPermission != nil { return }
 
         switch event.kind {
@@ -188,6 +195,10 @@ final class AppViewModel: ObservableObject {
 
     private func handleTriggerFired(_ ctx: TriggerContext) {
         cancelBubbleHide()
+        // DND silences autonomous triggers (active-app, periodic,
+        // scheduled) but lets explicit user-invoked ones (hotkey,
+        // menu bar) still fire so the user can always reach Rover.
+        if settings.dndEnabled, !ctx.requiresUserPrompt { return }
         if ctx.requiresUserPrompt {
             roverState = .getAttention
             bubbleMode = .input

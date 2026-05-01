@@ -56,6 +56,12 @@ struct AppStrings {
     var menuAsk: String { t("Ask Rover…", "Rover에게 묻기…") }
     var menuSound: String { t("Sound", "소리") }
     var menuShowMenuBar: String { t("Show menu bar icon", "메뉴바 아이콘 표시") }
+    var menuDND: String { t("Do Not Disturb", "방해 금지") }
+    var dndStatusActive: String { t("DND on", "DND 켜짐") }
+    var dndHint: String {
+        t("Mutes sounds, suppresses observer hints and autonomous triggers, and falls back permission prompts to the terminal. Click + hotkey still work.",
+          "사운드 / 옵저버 힌트 / 자동 트리거를 끄고, 권한 요청은 터미널 프롬프트로 폴백. 클릭 + 핫키는 계속 동작.")
+    }
     var menuModelLabel: String { t("Model", "모델") }
     var menuSettings: String { t("Settings…", "설정…") }
     var menuQuit: String { t("Quit Rover", "Rover 종료") }
