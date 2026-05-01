@@ -20,6 +20,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return c
     }()
     lazy var viewModel = AppViewModel(settings: settings, coordinator: coordinator)
+    lazy var permissionServer: PermissionServer = {
+        let s = PermissionServer()
+        s.onRequest = { [weak self] req in
+            Task { @MainActor in self?.viewModel.handlePermissionRequest(req) }
+        }
+        return s
+    }()
     lazy var settingsController = SettingsWindowController(
         settings: settings,
         keychain: keychain,
@@ -127,6 +134,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         wireTriggers()
+        wirePermissionServer()
+    }
+
+    /// Start / stop the local hook server and (un)install the Claude
+    /// Code hook, driven by `RoverSettings.permissionBubbleEnabled`.
+    /// Initial run reads the persisted toggle.
+    private func wirePermissionServer() {
+        viewModel.permissionServer = permissionServer
+
+        // Capture port writes — write the live port to disk every time
+        // the listener becomes ready so the hook script knows where to
+        // POST.
+        permissionServer.$port
+            .receive(on: RunLoop.main)
+            .sink { port in
+                guard port > 0 else { return }
+                try? PermissionHookInstaller.writePort(port)
+            }
+            .store(in: &cancellables)
+
+        applyPermissionBubble(enabled: settings.permissionBubbleEnabled)
+        settings.$permissionBubbleEnabled
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] enabled in self?.applyPermissionBubble(enabled: enabled) }
+            .store(in: &cancellables)
+    }
+
+    private func applyPermissionBubble(enabled: Bool) {
+        if enabled {
+            do {
+                try PermissionHookInstaller.install()
+                try permissionServer.start()
+            } catch {
+                NSLog("Permission Bubble install failed: \(error)")
+                settings.permissionBubbleEnabled = false
+            }
+        } else {
+            permissionServer.stop()
+            PermissionHookInstaller.uninstall()
+        }
     }
 
     /// Hook each trigger up to the coordinator and observe Settings so

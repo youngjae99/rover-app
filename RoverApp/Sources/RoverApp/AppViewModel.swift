@@ -47,9 +47,18 @@ final class AppViewModel: ObservableObject {
     /// AppDelegate updates this whenever the window moves or the screen
     /// changes, so the bubble never extends past the top of the visible area.
     @Published var maxBubbleScrollHeight: CGFloat = 420
+
+    /// Pending Claude Code permission ask, surfaced by the local hook
+    /// server. When non-nil the bubble shows an Allow / Deny card above
+    /// the transcript. Resolved via `respondToPermission(_:)`.
+    @Published var pendingPermission: PermissionRequest?
+
     let settings: RoverSettings
 
     private let coordinator: AgentCoordinator
+    /// Wired by AppDelegate when the permission server starts. nil when
+    /// the feature is off — UI stays inert.
+    var permissionServer: PermissionServer?
     private var sleepTimer: Timer?
     private var bubbleHideTimer: Timer?
 
@@ -63,6 +72,29 @@ final class AppViewModel: ObservableObject {
             self?.handleTriggerFired(ctx)
         }
         scheduleSleepCheck()
+    }
+
+    // MARK: - Permission bubble
+
+    /// Called by `PermissionServer.onRequest`. Pops the bubble open, plays
+    /// the attention sound, and parks the request waiting for a click.
+    func handlePermissionRequest(_ req: PermissionRequest) {
+        cancelBubbleHide()
+        pendingPermission = req
+        if case .hidden = bubbleMode { bubbleMode = .input }
+        roverState = .getAttention
+        SoundPlayer.shared.play("Tap.wav", volume: 0.45)
+    }
+
+    func respondToPermission(_ decision: PermissionRequest.Decision) {
+        guard let req = pendingPermission else { return }
+        permissionServer?.respond(id: req.id, decision: decision)
+        pendingPermission = nil
+        // If the request landed on a hidden / idle bubble, drop back to
+        // hidden once resolved unless there's still a transcript to show.
+        if !isStreaming, transcript.isEmpty {
+            bubbleMode = .hidden
+        }
     }
 
     private func handleTriggerFired(_ ctx: TriggerContext) {

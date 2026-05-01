@@ -115,6 +115,20 @@ struct AppStrings {
     var aboutClaudeCLI: String { t("Claude CLI", "Claude CLI") }
     var aboutCodexCLI: String { t("Codex CLI", "Codex CLI") }
 
+    // MARK: settings - permission bubble
+    var sectionPermissionBubble: String { t("Permission bubble", "권한 버블") }
+    var permBubbleToggle: String { t("Show permission requests in Rover", "권한 요청을 Rover 말풍선에 표시") }
+    var permBubbleHint: String {
+        t("Installs a Claude Code PreToolUse hook in ~/.claude/settings.json. Tool permission asks pop up as Allow / Deny in the bubble. If Rover isn't running the hook silently falls back to Claude's terminal prompt.",
+          "Claude Code의 PreToolUse 훅을 ~/.claude/settings.json 에 설치해. 도구 권한 요청이 말풍선의 Allow/Deny 로 뜸. Rover 가 꺼져 있으면 훅이 조용히 빠져서 Claude 의 터미널 프롬프트로 폴백.")
+    }
+    var permBubbleAllow: String { t("Allow", "허용") }
+    var permBubbleDeny: String { t("Deny", "거부") }
+    var permBubbleAsk: String { t("Decide later", "나중에") }
+    var permBubbleHeader: String { t("permission requested", "권한 요청") }
+    var permBubbleShowDetail: String { t("Show full input", "전체 입력 보기") }
+    var permBubbleHideDetail: String { t("Hide", "숨기기") }
+
     // MARK: settings - CLI binaries
     var sectionCLIBinaries: String { t("CLI binaries", "CLI 바이너리") }
     var cliBinaryChoose: String { t("Choose…", "선택…") }

@@ -40,6 +40,13 @@ final class RoverSettings: ObservableObject {
     /// when their `claude` install lives outside our auto-detected paths.
     @Published var customClaudePath: String { didSet { save("rover.claudeCLIPath", customClaudePath) } }
     @Published var customCodexPath: String { didSet { save("rover.codexCLIPath", customCodexPath) } }
+    /// Opt-in. When true, Rover starts a localhost hook server and
+    /// installs a `PreToolUse` entry into `~/.claude/settings.json` so
+    /// Claude Code asks for tool permission via Rover's bubble instead
+    /// of the terminal's built-in prompt.
+    @Published var permissionBubbleEnabled: Bool {
+        didSet { save("rover.permissionBubble", permissionBubbleEnabled) }
+    }
     @Published var language: AppLanguage {
         didSet { save("rover.language", language.rawValue) }
     }
@@ -111,6 +118,7 @@ final class RoverSettings: ObservableObject {
         self.allowDangerously = (d.object(forKey: "rover.dangerous") as? Bool) ?? false
         self.customClaudePath = d.string(forKey: "rover.claudeCLIPath") ?? ""
         self.customCodexPath = d.string(forKey: "rover.codexCLIPath") ?? ""
+        self.permissionBubbleEnabled = (d.object(forKey: "rover.permissionBubble") as? Bool) ?? false
         let storedBackend = d.string(forKey: "rover.backend").flatMap(BackendID.init(rawValue:))
         self.activeBackendId = storedBackend ?? .claudeCodeCLI
 

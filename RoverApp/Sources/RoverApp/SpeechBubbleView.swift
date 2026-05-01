@@ -77,6 +77,16 @@ struct SpeechBubbleView: View {
 
     @ViewBuilder
     private var scrollableContent: some View {
+        // Pending permission (if any) always sits at the top so the user
+        // can answer it without scrolling past streaming text.
+        if let req = viewModel.pendingPermission {
+            PermissionCard(request: req,
+                           strings: s,
+                           onAllow: { viewModel.respondToPermission(.allow) },
+                           onDeny: { viewModel.respondToPermission(.deny) },
+                           onAsk: { viewModel.respondToPermission(.ask) })
+                .padding(.bottom, viewModel.hasTranscript || viewModel.bubbleMode == .input ? 10 : 0)
+        }
         // The bubble shows the transcript whenever there is one, regardless
         // of mode. Starters only appear when the conversation is empty AND
         // the bubble is in input mode (i.e. fresh state, never asked).
@@ -86,7 +96,7 @@ struct SpeechBubbleView: View {
             inputContent
         } else if case .error(let text) = viewModel.bubbleMode {
             errorContent(text)
-        } else {
+        } else if viewModel.pendingPermission == nil {
             EmptyView()
         }
     }
@@ -511,5 +521,130 @@ private struct TranscriptRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+}
+
+// MARK: - PermissionCard
+
+/// In-bubble Allow / Deny / Ask card shown while a Claude Code
+/// PreToolUse hook is waiting on a decision. Folds out a "Show full
+/// input" detail row on demand.
+private struct PermissionCard: View {
+    let request: PermissionRequest
+    let strings: AppStrings
+    let onAllow: () -> Void
+    let onDeny: () -> Void
+    let onAsk: () -> Void
+
+    @State private var expanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.shield.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Color.orange)
+                Text(strings.permBubbleHeader)
+                    .font(XP.font(size: 11, bold: true))
+                    .foregroundStyle(.orange)
+                Spacer()
+                Text(request.toolName)
+                    .font(XP.font(size: 11, bold: true))
+                    .foregroundStyle(XP.textHeader)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(Color.orange.opacity(0.10))
+                    )
+            }
+
+            if let summary = request.summary, !summary.isEmpty {
+                Text(summary)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(XP.textBody)
+                    .lineLimit(expanded ? nil : 3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if expanded, let detail = request.inputDetail, !detail.isEmpty {
+                ScrollView(.vertical, showsIndicators: true) {
+                    Text(detail)
+                        .font(.system(.caption2, design: .monospaced))
+                        .foregroundStyle(XP.textBody.opacity(0.85))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(6)
+                }
+                .frame(maxHeight: 160)
+                .background(
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(Color.black.opacity(0.04))
+                )
+            }
+
+            HStack(spacing: 6) {
+                if request.inputDetail != nil {
+                    Button(expanded ? strings.permBubbleHideDetail : strings.permBubbleShowDetail) {
+                        expanded.toggle()
+                    }
+                    .buttonStyle(.plain)
+                    .font(XP.font(size: 11))
+                    .foregroundStyle(XP.textSecondary)
+                    .underline()
+                    .cursor(.pointingHand)
+                }
+                Spacer()
+                pillButton(symbol: "questionmark.circle",
+                           label: strings.permBubbleAsk,
+                           tint: XP.textSecondary,
+                           action: onAsk)
+                pillButton(symbol: "xmark",
+                           label: strings.permBubbleDeny,
+                           tint: Color.red.opacity(0.85),
+                           action: onDeny)
+                pillButton(symbol: "checkmark",
+                           label: strings.permBubbleAllow,
+                           tint: Color.green.opacity(0.85),
+                           action: onAllow)
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color.orange.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(Color.orange.opacity(0.40), lineWidth: 1)
+                )
+        )
+    }
+
+    private func pillButton(symbol: String,
+                            label: String,
+                            tint: Color,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: symbol).font(.system(size: 10, weight: .semibold))
+                Text(label).font(XP.font(size: 11, bold: true))
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(tint.opacity(0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .stroke(tint.opacity(0.30), lineWidth: 0.5)
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(label)
+        .cursor(.pointingHand)
     }
 }

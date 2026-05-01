@@ -140,6 +140,12 @@ struct SettingsView: View {
                     }
                 }
             }
+            Section(s.sectionPermissionBubble) {
+                Toggle(s.permBubbleToggle, isOn: $settings.permissionBubbleEnabled)
+                Text(s.permBubbleHint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section {
                 Text(s.backendHint)
                     .font(.caption)
