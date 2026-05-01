@@ -19,7 +19,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ))
         return c
     }()
-    lazy var viewModel = AppViewModel(settings: settings, coordinator: coordinator)
+    lazy var conversationStore = ConversationStore()
+    lazy var viewModel = AppViewModel(
+        settings: settings,
+        coordinator: coordinator,
+        conversationStore: conversationStore
+    )
     lazy var permissionServer: PermissionServer = {
         let s = PermissionServer()
         s.onRequest = { [weak self] req in

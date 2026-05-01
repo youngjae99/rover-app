@@ -36,6 +36,14 @@ final class ClaudeCodeCLIBackend: AgentBackend {
         runner.resetSession()
     }
 
+    var currentSessionId: String? {
+        runner.lastSessionId
+    }
+
+    func resumeSession(id: String) {
+        runner.adoptSession(id: id)
+    }
+
     private func translate(_ event: ClaudeEvent) {
         switch event {
         case .sessionStarted(let id):

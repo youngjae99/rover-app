@@ -64,6 +64,14 @@ final class ClaudeRunner {
         lastSessionId = nil
     }
 
+    /// Adopt a session id captured under a previously archived
+    /// conversation, so the next `send` invocation replays via
+    /// `--resume <id>` and Claude Code picks up exactly where the
+    /// archived turn left off.
+    func adoptSession(id: String) {
+        lastSessionId = id
+    }
+
     struct LaunchOptions {
         var cwd: String?
         var model: String?

@@ -47,8 +47,18 @@ protocol AgentBackend: AnyObject {
     /// conversation, switches backends, or changes the working directory
     /// for backends where that invalidates the resume token.
     func resetSession()
+    /// Resume id captured during the last turn (if any). Surfaced so we
+    /// can persist it alongside an archived conversation and replay it
+    /// later via `resumeSession`.
+    var currentSessionId: String? { get }
+    /// Adopt an external session id so the next turn replays an archived
+    /// conversation (Claude Code uses `--resume <id>`). No-op for
+    /// backends without a resume protocol.
+    func resumeSession(id: String)
 }
 
 extension AgentBackend {
     func resetSession() {}
+    var currentSessionId: String? { nil }
+    func resumeSession(id: String) {}
 }

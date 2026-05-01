@@ -7,20 +7,118 @@ interface Props {
 const { href, label, class: className = "" } = Astro.props;
 ---
 
-<a
-  href={href}
-  class={`inline-flex items-center gap-2 rounded-full border border-xp-border bg-white px-5 py-2.5 text-[15px] font-medium text-xp-accent transition-colors hover:bg-xp-bubble ${className}`}
->
-  <svg
-    aria-hidden="true"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    class="h-4 w-4"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.73-1.53-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.93 10.93 0 0 1 5.74 0c2.18-1.49 3.14-1.18 3.14-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.13v3.16c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"
-    ></path>
-  </svg>
-  {label}
+<a href={href} class={`xp-button ${className}`}>
+  <span class="xp-button__chrome">
+    <span class="xp-button__label">{label}</span>
+  </span>
 </a>
+
+<style>
+  /*
+   * XP Standard button — Luna theme, Figma spec mapped 1:1.
+   *
+   * Two-layer geometry from the source spec:
+   *   outer frame  (75×23, padding: 1px, min-width: 75px, grows inline)
+   *   inner chrome (73×21, padding: 3px 12px, the actual styled pill)
+   *
+   * Visual treatment is the spec's "default" state. Hover / focus /
+   * active / disabled extend it minimally — XP's Luna theme amber
+   * hot-track on hover, dotted inner outline on keyboard focus,
+   * pressed-in look on active, flat low-contrast on disabled.
+   */
+
+  /* ── Outer frame ───────────────────────────────────────────── */
+  .xp-button {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    box-sizing: border-box;
+
+    padding: 1px;
+    min-width: 75px;
+    height: 23px;
+
+    text-decoration: none;
+    user-select: none;
+    cursor: default;
+  }
+
+  /* ── Inner chrome ──────────────────────────────────────────── */
+  .xp-button__chrome {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    align-self: stretch;
+
+    padding: 3px 12px;
+
+    background: linear-gradient(180deg, #ffffff 0%, #f0f0ea 100%);
+    border: 1px solid #1c5180;
+    border-radius: 2.5px;
+    box-shadow:
+      1px 1px 0px rgba(255, 255, 255, 0.75),
+      -1px -1px 0px rgba(0, 0, 0, 0.05),
+      inset 1.5px 1.5px 2px #ffffff,
+      inset -1.5px -2.5px 2px rgba(83, 55, 0, 0.2);
+  }
+
+  /* ── Label ─────────────────────────────────────────────────── */
+  .xp-button__label {
+    display: flex;
+    align-items: center;
+    text-align: center;
+
+    font-family: "Tahoma", Geneva, Verdana, sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 11px;
+    line-height: 13px;
+    color: #000000;
+    white-space: nowrap;
+  }
+
+  /* ── State: hover (Luna amber hot-track) ───────────────────── */
+  .xp-button:hover .xp-button__chrome {
+    background: linear-gradient(180deg, #ffffff 0%, #fdf5d1 50%, #f8d978 100%);
+    border-color: #e1a91a;
+    box-shadow:
+      1px 1px 0px rgba(255, 255, 255, 0.75),
+      -1px -1px 0px rgba(0, 0, 0, 0.05),
+      inset 1.5px 1.5px 2px #ffffff,
+      inset -1.5px -2.5px 2px rgba(180, 110, 0, 0.25);
+  }
+
+  /* ── State: focus (dotted inner outline) ───────────────────── */
+  .xp-button:focus-visible {
+    outline: none;
+  }
+  .xp-button:focus-visible .xp-button__chrome {
+    outline: 1px dotted #000;
+    outline-offset: -3px;
+  }
+
+  /* ── State: active (gradient inverted, pressed in) ─────────── */
+  .xp-button:active .xp-button__chrome {
+    background: linear-gradient(180deg, #d8d8d2 0%, #ffffff 100%);
+    box-shadow:
+      inset 1px 1px 1px rgba(0, 0, 0, 0.18),
+      inset 1.5px 1.5px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  /* ── State: disabled ───────────────────────────────────────── */
+  .xp-button[aria-disabled="true"] {
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .xp-button[aria-disabled="true"] .xp-button__chrome {
+    background: linear-gradient(180deg, #f4f4f4 0%, #ececec 100%);
+    border-color: #b8b8b8;
+    box-shadow: none;
+  }
+  .xp-button[aria-disabled="true"] .xp-button__label {
+    color: #888;
+  }
+</style>

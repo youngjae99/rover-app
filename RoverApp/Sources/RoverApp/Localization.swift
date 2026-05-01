@@ -47,6 +47,9 @@ struct AppStrings {
     var bubbleErrorTitle: String { t("oops", "oops") }
     var bubbleStopButton: String { t("stop", "중단") }
     var bubbleNewConvButton: String { t("new", "새 대화") }
+    var bubbleHistoryButton: String { t("history", "기록") }
+    var historyMenuNew: String { t("New conversation", "새 대화") }
+    var historyMenuEmpty: String { t("(No past conversations)", "(이전 대화 없음)") }
 
     // MARK: status
     var statusThinking: String { t("thinking…", "생각 중…") }

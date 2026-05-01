@@ -9,7 +9,7 @@ enum BubbleMode: Equatable {
     case error(String)
 }
 
-enum TranscriptKind: Equatable {
+enum TranscriptKind: String, Codable, Equatable {
     case user
     case assistant
     case reasoning
@@ -19,14 +19,15 @@ enum TranscriptKind: Equatable {
     case error
 }
 
-struct TranscriptItem: Identifiable, Equatable {
-    let id = UUID()
+struct TranscriptItem: Identifiable, Equatable, Codable {
+    var id: UUID = UUID()
     var kind: TranscriptKind
     var text: String
     var meta: String? = nil
     /// True while text is still being filled in by streaming events.
     /// Flipped to false when the next item of a different kind arrives,
-    /// or when the turn completes.
+    /// or when the turn completes. Persisted as false (we never archive
+    /// mid-stream items).
     var streaming: Bool = false
 }
 
@@ -54,6 +55,18 @@ final class AppViewModel: ObservableObject {
     @Published var pendingPermission: PermissionRequest?
 
     let settings: RoverSettings
+    /// On-disk archive of past conversations. Bound at init so the bubble
+    /// can render a history menu without going through AppDelegate.
+    let conversationStore: ConversationStore
+
+    /// Identity of the conversation currently shown in the bubble. nil
+    /// before the first user message of a fresh conversation, otherwise
+    /// matches the id under which the conversation will be archived.
+    @Published var currentConversationId: UUID?
+    /// Origination timestamp of the active conversation, captured the
+    /// first time something is appended so archived entries keep a
+    /// stable createdAt across re-archive on every turn.
+    private var currentConversationCreatedAt: Date?
 
     private let coordinator: AgentCoordinator
     /// Wired by AppDelegate when the permission server starts. nil when
@@ -62,9 +75,12 @@ final class AppViewModel: ObservableObject {
     private var sleepTimer: Timer?
     private var bubbleHideTimer: Timer?
 
-    init(settings: RoverSettings, coordinator: AgentCoordinator) {
+    init(settings: RoverSettings,
+         coordinator: AgentCoordinator,
+         conversationStore: ConversationStore) {
         self.settings = settings
         self.coordinator = coordinator
+        self.conversationStore = conversationStore
         coordinator.onEvent = { [weak self] event in
             self?.handleEvent(event)
         }
@@ -259,15 +275,77 @@ final class AppViewModel: ObservableObject {
     }
 
     /// Drop the conversation history so the next prompt starts a fresh
-    /// Claude Code session (no `--resume`). The bubble returns to the
-    /// "starters + input" state.
+    /// Claude Code session (no `--resume`). The current transcript is
+    /// archived first if there's anything substantive in it, so the user
+    /// can come back to it from the history menu.
     func newConversation() {
         if isStreaming { coordinator.cancel() }
+        archiveCurrent()
         coordinator.newConversation()
+        currentConversationId = nil
+        currentConversationCreatedAt = nil
         transcript = []
         statusText = ""
         bubbleMode = .input
         roverState = .getAttention
+    }
+
+    /// Restore a conversation from the archive: replace the live
+    /// transcript and adopt the original Claude Code session id so the
+    /// next prompt continues exactly where the user left off.
+    func resume(_ conversation: Conversation) {
+        if isStreaming { coordinator.cancel() }
+        archiveCurrent()
+        currentConversationId = conversation.id
+        currentConversationCreatedAt = conversation.createdAt
+        transcript = conversation.transcript
+        // Always start backends from a clean slate, then adopt the
+        // archived session id only for the backend the conversation was
+        // captured under (currently only Claude Code stores one).
+        coordinator.newConversation()
+        if let sid = conversation.claudeSessionId {
+            coordinator.resumeSession(id: sid)
+        }
+        statusText = ""
+        bubbleMode = .input
+        roverState = .getAttention
+    }
+
+    /// Save the current transcript to the on-disk archive. No-op if
+    /// nothing meaningful has been said yet (no user prompt). Idempotent
+    /// against the same `currentConversationId`, so we can call it on
+    /// every turn-complete to keep the archive fresh.
+    private func archiveCurrent() {
+        let hasUser = transcript.contains { $0.kind == .user }
+        guard hasUser else { return }
+
+        let id = currentConversationId ?? UUID()
+        currentConversationId = id
+        let createdAt = currentConversationCreatedAt ?? Date()
+        currentConversationCreatedAt = createdAt
+
+        let firstUserText = transcript.first(where: { $0.kind == .user })?.text ?? ""
+        let title = String(firstUserText.prefix(60))
+
+        // Only persist resolved (non-streaming) items. We never archive
+        // mid-stream state.
+        let snapshot = transcript.map { item -> TranscriptItem in
+            var copy = item
+            copy.streaming = false
+            return copy
+        }
+
+        let conv = Conversation(
+            id: id,
+            title: title,
+            transcript: snapshot,
+            claudeSessionId: coordinator.currentSessionId,
+            backendId: settings.activeBackendId.rawValue,
+            model: settings.model,
+            createdAt: createdAt,
+            updatedAt: Date()
+        )
+        conversationStore.upsert(conv)
     }
 
     func runStarter(_ starter: LocalizedStarter) {
@@ -346,6 +424,10 @@ final class AppViewModel: ObservableObject {
             }
             statusText = ""
             bubbleMode = transcript.isEmpty ? .hidden : .showing
+            // Persist on every completed turn so the history menu is
+            // always up to date — even if the user never explicitly
+            // hits "new" before quitting.
+            archiveCurrent()
             scheduleSleepCheck()
         case .error(let text):
             finalizeAllStreaming()

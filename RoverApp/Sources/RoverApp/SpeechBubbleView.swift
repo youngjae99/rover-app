@@ -4,6 +4,7 @@ import AppKit
 struct SpeechBubbleView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @EnvironmentObject var settings: RoverSettings
+    @State private var showHistoryMenu: Bool = false
 
     /// Distance from the bubble's trailing edge to the center of its tail.
     var tailOffsetFromTrailing: CGFloat = 100
@@ -105,10 +106,16 @@ struct SpeechBubbleView: View {
 
     private var inputContent: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(s.bubbleInputHeader)
-                .font(XP.font(size: 13, bold: true))
-                .foregroundStyle(XP.textHeader)
-                .padding(.bottom, 2)
+            HStack {
+                Text(s.bubbleInputHeader)
+                    .font(XP.font(size: 13, bold: true))
+                    .foregroundStyle(XP.textHeader)
+                Spacer()
+                if !viewModel.conversationStore.conversations.isEmpty {
+                    historyPill
+                }
+            }
+            .padding(.bottom, 2)
 
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(settings.primaryStarters) { starter in
@@ -154,6 +161,7 @@ struct SpeechBubbleView: View {
                 if case .streaming = viewModel.bubbleMode {
                     EmptyView()
                 } else {
+                    historyPill
                     headerButton(
                         symbol: "arrow.counterclockwise",
                         label: s.bubbleNewConvButton,
@@ -204,6 +212,48 @@ struct SpeechBubbleView: View {
             return viewModel.statusText.isEmpty ? s.bubbleStreamingThinking : viewModel.statusText
         }
         return s.bubbleResponseHeader
+    }
+
+    /// Pill button that opens the XP-styled past-conversations popover.
+    /// Shown in both input mode (above the starter list) and transcript
+    /// header so the user can switch context regardless of current state.
+    private var historyPill: some View {
+        Button { showHistoryMenu.toggle() } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(s.bubbleHistoryButton)
+                    .font(XP.font(size: 11, bold: true))
+            }
+            .foregroundStyle(XP.textSecondary)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(XP.textSecondary.opacity(0.10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .stroke(XP.textSecondary.opacity(0.25), lineWidth: 0.5)
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(s.bubbleHistoryButton)
+        .cursor(.pointingHand)
+        .popover(isPresented: $showHistoryMenu, arrowEdge: .top) {
+            ConversationHistoryMenu(
+                conversations: viewModel.conversationStore.conversations,
+                onNew: {
+                    showHistoryMenu = false
+                    viewModel.newConversation()
+                },
+                onSelect: { conv in
+                    showHistoryMenu = false
+                    viewModel.resume(conv)
+                }
+            )
+        }
     }
 
     // MARK: - error

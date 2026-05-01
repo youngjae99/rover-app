@@ -58,6 +58,18 @@ final class AgentCoordinator: ObservableObject {
         activeBackend?.resetSession()
     }
 
+    /// Active backend's currently-tracked session id (for archiving).
+    var currentSessionId: String? {
+        activeBackend?.currentSessionId
+    }
+
+    /// Tell the active backend to adopt a session id captured under a
+    /// previously archived conversation. Only applies to backends that
+    /// expose a resume protocol; others ignore.
+    func resumeSession(id: String) {
+        activeBackend?.resumeSession(id: id)
+    }
+
     /// Called when the user changes the working directory in Settings.
     /// Claude Code stores its session log per cwd, so resuming with a
     /// session id captured under the old cwd would fail. Reset to be safe.
