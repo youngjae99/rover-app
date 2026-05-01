@@ -1,0 +1,76 @@
+name: Release
+
+# Tag-driven release. Push a tag like `v0.2.0` to build Rover.app on
+# macOS, package it into Rover.dmg via package.sh (hdiutil, no
+# create-dmg dependency), and attach the DMG to the matching GitHub
+# Release.
+#
+# Builds are ad-hoc signed only — Apple Developer ID signing and
+# notarization are tracked in the Roadmap. First-launch users still
+# need to right-click → Open until that's wired up.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.2.0). Required for manual runs.'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [[ -n "${{ github.event.inputs.tag }}" ]]; then
+            echo "value=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Build Rover.app + Rover.dmg
+        working-directory: RoverApp
+        run: ./package.sh
+
+      - name: Verify artifact
+        working-directory: RoverApp
+        run: |
+          test -f Rover.dmg
+          ls -lh Rover.dmg
+          hdiutil verify Rover.dmg
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "→ existing release for $TAG, replacing asset"
+            gh release upload "$TAG" RoverApp/Rover.dmg --clobber
+          else
+            echo "→ creating release for $TAG"
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --generate-notes \
+              RoverApp/Rover.dmg
+          fi
