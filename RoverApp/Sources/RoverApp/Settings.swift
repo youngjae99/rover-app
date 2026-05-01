@@ -34,6 +34,12 @@ final class RoverSettings: ObservableObject {
         }
     }
     @Published var allowDangerously: Bool { didSet { save("rover.dangerous", allowDangerously) } }
+    /// Empty string = auto-detect via `ClaudeRunner.detectClaudePath()`. A
+    /// non-empty value overrides the probe and is the path passed to
+    /// `Process.executableURL`. Settings UI lets the user pick a binary
+    /// when their `claude` install lives outside our auto-detected paths.
+    @Published var customClaudePath: String { didSet { save("rover.claudeCLIPath", customClaudePath) } }
+    @Published var customCodexPath: String { didSet { save("rover.codexCLIPath", customCodexPath) } }
     @Published var language: AppLanguage {
         didSet { save("rover.language", language.rawValue) }
     }
@@ -103,6 +109,8 @@ final class RoverSettings: ObservableObject {
         self.showMenuBarIcon = (d.object(forKey: "rover.menuBar") as? Bool) ?? true
         self.soundEnabled = (d.object(forKey: "rover.sound") as? Bool) ?? true
         self.allowDangerously = (d.object(forKey: "rover.dangerous") as? Bool) ?? false
+        self.customClaudePath = d.string(forKey: "rover.claudeCLIPath") ?? ""
+        self.customCodexPath = d.string(forKey: "rover.codexCLIPath") ?? ""
         let storedBackend = d.string(forKey: "rover.backend").flatMap(BackendID.init(rawValue:))
         self.activeBackendId = storedBackend ?? .claudeCodeCLI
 

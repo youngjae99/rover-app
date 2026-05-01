@@ -28,6 +28,14 @@ final class ClaudeRunner {
     }
 
     static func detectClaudePath() -> String {
+        // User override (set via Settings → Advanced → CLI binaries) wins.
+        // Empty / whitespace-only values are treated as "no override" so
+        // clearing the field falls back to auto-detection.
+        let override = (UserDefaults.standard.string(forKey: "rover.claudeCLIPath") ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !override.isEmpty, FileManager.default.fileExists(atPath: override) {
+            return override
+        }
         let candidates = [
             "/Applications/cmux.app/Contents/Resources/bin/claude",
             "/opt/homebrew/bin/claude",
@@ -66,6 +74,9 @@ final class ClaudeRunner {
     func send(prompt: String, options: LaunchOptions = LaunchOptions()) {
         cancel()
         lineBuffer.removeAll()
+        // Re-resolve in case the user changed the override in Settings since
+        // this runner was created.
+        executablePath = Self.detectClaudePath()
 
         let proc = Process()
         let stdout = Pipe()

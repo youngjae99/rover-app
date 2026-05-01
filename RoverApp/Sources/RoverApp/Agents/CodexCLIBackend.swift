@@ -26,6 +26,12 @@ final class CodexCLIBackend: AgentBackend {
     }
 
     static func detectCodexPath() -> String {
+        // User override (Settings → Advanced → CLI binaries) wins.
+        let override = (UserDefaults.standard.string(forKey: "rover.codexCLIPath") ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !override.isEmpty, FileManager.default.fileExists(atPath: override) {
+            return override
+        }
         let home = ProcessInfo.processInfo.environment["HOME"] ?? ""
         let candidates = [
             "/opt/homebrew/bin/codex",
@@ -46,6 +52,9 @@ final class CodexCLIBackend: AgentBackend {
         lineBuffer.removeAll()
         currentAgentMessage = ""
         didEmitFinalText = false
+        // Re-resolve in case the user changed the override in Settings since
+        // this backend was created.
+        executablePath = Self.detectCodexPath()
 
         let proc = Process()
         let stdout = Pipe()

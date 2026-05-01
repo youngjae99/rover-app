@@ -115,6 +115,18 @@ struct AppStrings {
     var aboutClaudeCLI: String { t("Claude CLI", "Claude CLI") }
     var aboutCodexCLI: String { t("Codex CLI", "Codex CLI") }
 
+    // MARK: settings - CLI binaries
+    var sectionCLIBinaries: String { t("CLI binaries", "CLI 바이너리") }
+    var cliBinaryChoose: String { t("Choose…", "선택…") }
+    var cliBinaryReset: String { t("Reset", "초기화") }
+    var cliBinaryAuto: String { t("auto-detected", "자동 탐지") }
+    var cliBinaryCustom: String { t("custom", "사용자 지정") }
+    var cliBinaryNotFound: String { t("not found at this path", "해당 경로에 파일 없음") }
+    var cliBinariesHint: String {
+        t("Override the auto-detected path if your CLI lives somewhere else (e.g. asdf, mise, or a custom install).",
+          "CLI가 자동 탐지되지 않는 위치(asdf, mise, 사용자 설치 등)에 있다면 직접 지정.")
+    }
+
     // MARK: settings - backend
     var sectionBackend: String { t("Active backend", "활성 백엔드") }
     var sectionAnthropicKey: String { t("Anthropic API key", "Anthropic API 키") }
