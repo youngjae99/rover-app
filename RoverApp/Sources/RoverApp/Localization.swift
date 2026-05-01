@@ -129,6 +129,14 @@ struct AppStrings {
     var permBubbleShowDetail: String { t("Show full input", "전체 입력 보기") }
     var permBubbleHideDetail: String { t("Hide", "숨기기") }
 
+    // MARK: settings - observers
+    var sectionObservers: String { t("External agent observers", "외부 에이전트 옵저버") }
+    var cursorObserverToggle: String { t("Watch Cursor Agent", "Cursor Agent 관찰") }
+    var cursorObserverHint: String {
+        t("Installs hooks at ~/.cursor/hooks.json so Cursor's shell + read tool calls animate Rover. Read-only — Rover never blocks Cursor.",
+          "~/.cursor/hooks.json 에 훅을 설치해서 Cursor 의 shell / read 도구 호출 시 Rover 가 애니메이션. 읽기 전용 — Rover 는 Cursor 를 차단하지 않음.")
+    }
+
     // MARK: settings - CLI binaries
     var sectionCLIBinaries: String { t("CLI binaries", "CLI 바이너리") }
     var cliBinaryChoose: String { t("Choose…", "선택…") }

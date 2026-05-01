@@ -97,6 +97,65 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    // MARK: - External agent observers
+
+    /// Called by `PermissionServer.onObserve` whenever a Cursor / Gemini /
+    /// Copilot / opencode hook fires. Plays the matching animation and
+    /// drops a transient hint into the bubble. Suppressed while Rover's
+    /// own bubble is busy (a streaming primary backend or a pending
+    /// permission ask shouldn't get preempted by background activity).
+    func handleObserverEvent(_ event: ObserverEvent) {
+        if isStreaming || pendingPermission != nil { return }
+
+        switch event.kind {
+        case .toolCall:
+            roverState = .eat
+        case .readFile:
+            roverState = .reading
+        case .completed:
+            roverState = .haf
+        case .error:
+            roverState = .ashamed
+        }
+
+        let label = observerLabel(for: event)
+        if !label.isEmpty {
+            cancelBubbleHide()
+            push(TranscriptItem(kind: .status, text: label))
+            bubbleMode = .showing
+            bubbleHideTimer = Timer.scheduledTimer(withTimeInterval: 6, repeats: false) { [weak self] _ in
+                Task { @MainActor in
+                    guard let self else { return }
+                    if case .showing = self.bubbleMode, !self.hasTranscriptItemsBeyondStatus() {
+                        self.bubbleMode = .hidden
+                        self.transcript.removeAll { $0.kind == .status }
+                    }
+                }
+            }
+        }
+    }
+
+    private func observerLabel(for event: ObserverEvent) -> String {
+        let agent = event.agent.isEmpty ? "agent" : event.agent
+        let action: String
+        switch event.kind {
+        case .toolCall:  action = event.tool ?? "tool"
+        case .readFile:  action = "read"
+        case .completed: action = "done"
+        case .error:     action = "error"
+        }
+        if let summary = event.summary, !summary.isEmpty {
+            return "\(agent) · \(action) · \(summary)"
+        }
+        return "\(agent) · \(action)"
+    }
+
+    /// True if any non-status transcript item exists, i.e. there's
+    /// "real" conversation we shouldn't auto-clear.
+    private func hasTranscriptItemsBeyondStatus() -> Bool {
+        transcript.contains { $0.kind != .status }
+    }
+
     private func handleTriggerFired(_ ctx: TriggerContext) {
         cancelBubbleHide()
         if ctx.requiresUserPrompt {

@@ -20,6 +20,11 @@ final class PermissionServer: ObservableObject {
     /// surface the request in the bubble.
     var onRequest: ((PermissionRequest) -> Void)?
 
+    /// Called for one-way observability events from external agents
+    /// (Cursor, Gemini, Copilot, …). The view model animates Rover and
+    /// shows a transient hint in the bubble.
+    var onObserve: ((ObserverEvent) -> Void)?
+
     private var listener: NWListener?
     private var continuations: [UUID: CheckedContinuation<PermissionRequest.Decision, Never>] = [:]
 
@@ -85,12 +90,17 @@ final class PermissionServer: ObservableObject {
             await sendString(conn, "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
             return
         }
-        // Single endpoint. Anything else 404s.
-        guard request.head.contains("/pretooluse") else {
+        if request.head.contains("/pretooluse") {
+            await handlePretooluse(conn, body: request.body)
+        } else if request.head.contains("/observe") {
+            await handleObserve(conn, body: request.body, head: request.head)
+        } else {
             await sendString(conn, "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
-            return
         }
-        let json = (try? JSONSerialization.jsonObject(with: request.body)) as? [String: Any] ?? [:]
+    }
+
+    private func handlePretooluse(_ conn: NWConnection, body: Data) async {
+        let json = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] ?? [:]
         let toolName = (json["tool_name"] as? String) ?? "tool"
         let toolInput = json["tool_input"] as? [String: Any]
         let summary = toolInput.flatMap { Self.summarize($0) }
@@ -112,10 +122,58 @@ final class PermissionServer: ObservableObject {
                 "permissionDecisionReason": "Resolved by Rover (\(decision.rawValue))"
             ]
         ]
-        let body = (try? JSONSerialization.data(withJSONObject: respJSON, options: [])) ?? Data()
-        let header = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: \(body.count)\r\nConnection: close\r\n\r\n"
+        let respBody = (try? JSONSerialization.data(withJSONObject: respJSON, options: [])) ?? Data()
+        let header = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: \(respBody.count)\r\nConnection: close\r\n\r\n"
         await sendString(conn, header)
-        await sendData(conn, body)
+        await sendData(conn, respBody)
+    }
+
+    /// One-way observability sink. The hook script POSTs an event blob
+    /// describing what the external agent just did, we animate / log,
+    /// and reply 204 No Content. Used by Cursor / Gemini / Copilot
+    /// integrations that don't need a permission decision.
+    ///
+    /// `agent` and `kind` come from the URL query string (so a hook
+    /// script can forward the agent's native stdin verbatim without
+    /// having to re-wrap it in a Rover envelope). The body is parsed
+    /// for a summary line if present.
+    private func handleObserve(_ conn: NWConnection, body: Data, head: String) async {
+        let query = Self.queryParams(in: head)
+        let agent = query["agent"] ?? "agent"
+        let kind = ObserverEvent.Kind(rawValue: query["kind"] ?? "") ?? .toolCall
+        let tool = query["tool"]
+
+        let json = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] ?? [:]
+        let summary: String?
+        if let s = json["summary"] as? String, !s.isEmpty {
+            summary = s
+        } else if !json.isEmpty {
+            summary = Self.summarize(json) ?? (json["tool_input"] as? [String: Any]).flatMap(Self.summarize)
+        } else {
+            summary = nil
+        }
+        onObserve?(ObserverEvent(agent: agent, kind: kind, tool: tool, summary: summary))
+        await sendString(conn, "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+    }
+
+    /// Parse the request line ("POST /path?a=1&b=2 HTTP/1.1") into a
+    /// tiny key-value map. Values are URL-percent-decoded; missing
+    /// values default to the empty string.
+    private static func queryParams(in head: String) -> [String: String] {
+        guard let firstLine = head.split(separator: "\r\n").first else { return [:] }
+        let parts = firstLine.split(separator: " ")
+        guard parts.count >= 2 else { return [:] }
+        let target = String(parts[1])
+        guard let q = target.firstIndex(of: "?") else { return [:] }
+        let qs = String(target[target.index(after: q)...])
+        var out: [String: String] = [:]
+        for pair in qs.split(separator: "&") {
+            let kv = pair.split(separator: "=", maxSplits: 1)
+            let k = String(kv[0]).removingPercentEncoding ?? String(kv[0])
+            let v = kv.count > 1 ? (String(kv[1]).removingPercentEncoding ?? String(kv[1])) : ""
+            out[k] = v
+        }
+        return out
     }
 
     // MARK: - Tool-input rendering

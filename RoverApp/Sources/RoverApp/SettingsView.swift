@@ -146,6 +146,12 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Section(s.sectionObservers) {
+                Toggle(s.cursorObserverToggle, isOn: $settings.cursorObserverEnabled)
+                Text(s.cursorObserverHint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section {
                 Text(s.backendHint)
                     .font(.caption)

@@ -47,6 +47,12 @@ final class RoverSettings: ObservableObject {
     @Published var permissionBubbleEnabled: Bool {
         didSet { save("rover.permissionBubble", permissionBubbleEnabled) }
     }
+    /// When on, Rover auto-installs Cursor agent hooks at
+    /// `~/.cursor/hooks.json` so Cursor's tool calls trigger the same
+    /// animations as the primary backend.
+    @Published var cursorObserverEnabled: Bool {
+        didSet { save("rover.cursorObserver", cursorObserverEnabled) }
+    }
     @Published var language: AppLanguage {
         didSet { save("rover.language", language.rawValue) }
     }
@@ -119,6 +125,7 @@ final class RoverSettings: ObservableObject {
         self.customClaudePath = d.string(forKey: "rover.claudeCLIPath") ?? ""
         self.customCodexPath = d.string(forKey: "rover.codexCLIPath") ?? ""
         self.permissionBubbleEnabled = (d.object(forKey: "rover.permissionBubble") as? Bool) ?? false
+        self.cursorObserverEnabled = (d.object(forKey: "rover.cursorObserver") as? Bool) ?? false
         let storedBackend = d.string(forKey: "rover.backend").flatMap(BackendID.init(rawValue:))
         self.activeBackendId = storedBackend ?? .claudeCodeCLI
 

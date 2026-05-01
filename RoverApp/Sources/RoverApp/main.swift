@@ -25,6 +25,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         s.onRequest = { [weak self] req in
             Task { @MainActor in self?.viewModel.handlePermissionRequest(req) }
         }
+        s.onObserve = { [weak self] event in
+            Task { @MainActor in self?.viewModel.handleObserverEvent(event) }
+        }
         return s
     }()
     lazy var settingsController = SettingsWindowController(
@@ -134,18 +137,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         wireTriggers()
-        wirePermissionServer()
+        wireHookServer()
     }
 
-    /// Start / stop the local hook server and (un)install the Claude
-    /// Code hook, driven by `RoverSettings.permissionBubbleEnabled`.
-    /// Initial run reads the persisted toggle.
-    private func wirePermissionServer() {
+    /// Start / stop the local hook server and (un)install per-agent
+    /// hooks, driven by Settings. The server is shared across all hook
+    /// integrations (Claude Code permission bubble + observer hooks for
+    /// Cursor / Gemini / …) so it stays up as long as any one of them
+    /// is enabled.
+    private func wireHookServer() {
         viewModel.permissionServer = permissionServer
 
-        // Capture port writes — write the live port to disk every time
-        // the listener becomes ready so the hook script knows where to
-        // POST.
+        // Write the live port to disk every time the listener becomes
+        // ready so all hook scripts know where to POST.
         permissionServer.$port
             .receive(on: RunLoop.main)
             .sink { port in
@@ -154,26 +158,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
-        applyPermissionBubble(enabled: settings.permissionBubbleEnabled)
+        applyHookConfig()
         settings.$permissionBubbleEnabled
             .dropFirst()
             .receive(on: RunLoop.main)
-            .sink { [weak self] enabled in self?.applyPermissionBubble(enabled: enabled) }
+            .sink { [weak self] _ in self?.applyHookConfig() }
+            .store(in: &cancellables)
+        settings.$cursorObserverEnabled
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.applyHookConfig() }
             .store(in: &cancellables)
     }
 
-    private func applyPermissionBubble(enabled: Bool) {
-        if enabled {
+    private func applyHookConfig() {
+        let needServer = settings.permissionBubbleEnabled || settings.cursorObserverEnabled
+
+        if needServer {
             do {
-                try PermissionHookInstaller.install()
                 try permissionServer.start()
             } catch {
+                NSLog("Hook server start failed: \(error)")
+                settings.permissionBubbleEnabled = false
+                settings.cursorObserverEnabled = false
+                return
+            }
+        }
+
+        // Per-agent install / uninstall.
+        if settings.permissionBubbleEnabled {
+            do { try PermissionHookInstaller.install() }
+            catch {
                 NSLog("Permission Bubble install failed: \(error)")
                 settings.permissionBubbleEnabled = false
             }
         } else {
-            permissionServer.stop()
             PermissionHookInstaller.uninstall()
+        }
+
+        if settings.cursorObserverEnabled {
+            do { try CursorHookInstaller.install() }
+            catch {
+                NSLog("Cursor observer install failed: \(error)")
+                settings.cursorObserverEnabled = false
+            }
+        } else {
+            CursorHookInstaller.uninstall()
+        }
+
+        if !needServer {
+            permissionServer.stop()
         }
     }
 
