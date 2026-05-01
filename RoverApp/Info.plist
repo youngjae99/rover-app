@@ -33,6 +33,12 @@
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.developer-tools</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>Roger uses Apple Events to read which app is in the foreground.</string>
+    <string>Rover uses Apple Events to detect which app is in the foreground, so it can react when you switch apps.</string>
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>Rover takes screenshots when you use the Anthropic Computer Use backend or enable periodic screen observation.</string>
+    <key>NSInputMonitoringUsageDescription</key>
+    <string>Rover monitors keyboard input for the global hotkey (⌘⇧Space) and Esc to cancel a running agent.</string>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>Rover uses Accessibility to move the mouse, click, type, and scroll on your behalf when you use the Anthropic Computer Use backend.</string>
 </dict>
 </plist>
