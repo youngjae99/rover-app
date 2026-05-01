@@ -22,9 +22,9 @@
 </p>
 
 <p align="center">
-  <img src="docs/rover-states.png" width="800" alt="Rover의 idle, speak, reading, sleep 상태" />
+  <img src="docs/rover-states-grid.png" width="720" alt="Rover의 12가지 애니메이션 상태: idle, speak, reading, eat, sleep, tired, haf, lick, ashamed, attention, come, exit" />
   <br/>
-  <em>idle &nbsp;·&nbsp; speak &nbsp;·&nbsp; reading &nbsp;·&nbsp; sleep &nbsp;·&nbsp; (총 24개 상태)</em>
+  <em>총 24개 상태 중 12개</em>
 </p>
 
 > **데모 영상.** v1 런칭에 맞춰 60초 워크스루를 녹화 중입니다. 직접 캡처하려면 Cmd+Shift+5 → Record Selected Portion 으로 Rover 와 말풍선을 함께 담은 뒤 `docs/demo.mp4` 로 저장하세요.

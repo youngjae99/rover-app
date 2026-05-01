@@ -22,9 +22,9 @@
 </p>
 
 <p align="center">
-  <img src="docs/rover-states.png" width="800" alt="Rover idle, speaking, reading, sleeping" />
+  <img src="docs/rover-states-grid.png" width="720" alt="Twelve Rover animation states: idle, speak, reading, eat, sleep, tired, haf, lick, ashamed, attention, come, exit" />
   <br/>
-  <em>idle &nbsp;·&nbsp; speak &nbsp;·&nbsp; reading &nbsp;·&nbsp; sleep &nbsp;·&nbsp; (24 states total)</em>
+  <em>twelve of twenty-four states he can play</em>
 </p>
 
 > **Demo video.** A 60-second walkthrough is being recorded for the v1 launch. To capture your own meanwhile, use Cmd+Shift+5 → Record Selected Portion, frame Rover plus the bubble, and save the file as `docs/demo.mp4`.
