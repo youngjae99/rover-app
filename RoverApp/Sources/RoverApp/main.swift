@@ -5,8 +5,31 @@ import Combine
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let settings = RoverSettings()
-    lazy var viewModel = AppViewModel(settings: settings)
-    lazy var settingsController = SettingsWindowController(settings: settings)
+    let keychain = KeychainStore.shared
+    let safety = SafetyController()
+    lazy var dispatcher = ComputerUseDispatcher(safety: safety)
+    lazy var coordinator: AgentCoordinator = {
+        let c = AgentCoordinator(settings: settings)
+        c.register(ClaudeCodeCLIBackend())
+        c.register(CodexCLIBackend())
+        c.register(AnthropicComputerUseBackend(
+            keychain: keychain,
+            dispatcher: dispatcher,
+            safety: safety
+        ))
+        return c
+    }()
+    lazy var viewModel = AppViewModel(settings: settings, coordinator: coordinator)
+    lazy var settingsController = SettingsWindowController(
+        settings: settings,
+        keychain: keychain,
+        safety: safety
+    )
+
+    lazy var hotkeyTrigger = HotkeyTrigger(isEnabled: settings.hotkeyEnabled)
+    lazy var activeAppTrigger = ActiveAppTrigger(isEnabled: settings.activeAppEnabled)
+    lazy var periodicTrigger = PeriodicScreenTrigger(isEnabled: settings.periodicEnabled)
+    lazy var scheduleTrigger = ScheduleTrigger(settings: settings, isEnabled: settings.scheduleEnabled)
     lazy var menuBar = MenuBarController(
         settings: settings,
         viewModel: viewModel,
@@ -93,6 +116,73 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return event
         }
+
+        wireTriggers()
+    }
+
+    /// Hook each trigger up to the coordinator and observe Settings so
+    /// toggling enable in the UI starts/stops the live trigger.
+    private func wireTriggers() {
+        for trigger in triggers {
+            trigger.onFire = { [weak self] ctx in
+                self?.coordinator.handleTriggerFired(ctx)
+            }
+        }
+        applyHotkeyConfig()
+        applyPeriodicConfig()
+        applyActiveAppConfig()
+        scheduleTrigger.start()
+
+        settings.$hotkeyEnabled
+            .receive(on: RunLoop.main)
+            .sink { [weak self] enabled in self?.hotkeyTrigger.isEnabled = enabled }
+            .store(in: &cancellables)
+        settings.$activeAppEnabled
+            .receive(on: RunLoop.main)
+            .sink { [weak self] enabled in self?.activeAppTrigger.isEnabled = enabled }
+            .store(in: &cancellables)
+        settings.$activeAppDebounceSec
+            .receive(on: RunLoop.main)
+            .sink { [weak self] sec in self?.activeAppTrigger.debounceSec = sec }
+            .store(in: &cancellables)
+        settings.$periodicEnabled
+            .receive(on: RunLoop.main)
+            .sink { [weak self] enabled in self?.applyPeriodicConfig(enabled: enabled) }
+            .store(in: &cancellables)
+        settings.$periodicIntervalSec
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.applyPeriodicConfig() }
+            .store(in: &cancellables)
+        settings.$scheduleEnabled
+            .receive(on: RunLoop.main)
+            .sink { [weak self] enabled in
+                self?.scheduleTrigger.isEnabled = enabled
+            }
+            .store(in: &cancellables)
+        settings.$schedules
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.scheduleTrigger.rescheduleAll() }
+            .store(in: &cancellables)
+    }
+
+    private var triggers: [any Trigger] {
+        [hotkeyTrigger, activeAppTrigger, periodicTrigger, scheduleTrigger]
+    }
+
+    private func applyHotkeyConfig() {
+        hotkeyTrigger.isEnabled = settings.hotkeyEnabled
+    }
+
+    private func applyActiveAppConfig() {
+        activeAppTrigger.debounceSec = settings.activeAppDebounceSec
+        activeAppTrigger.isEnabled = settings.activeAppEnabled
+    }
+
+    private func applyPeriodicConfig(enabled: Bool? = nil) {
+        // Stop, reconfigure, restart so interval changes take effect.
+        periodicTrigger.stop()
+        periodicTrigger.intervalSec = settings.periodicIntervalSec
+        periodicTrigger.isEnabled = enabled ?? settings.periodicEnabled
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }

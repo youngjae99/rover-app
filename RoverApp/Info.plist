@@ -28,5 +28,7 @@
     <string>NSApplication</string>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.developer-tools</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Roger uses Apple Events to read which app is in the foreground.</string>
 </dict>
 </plist>

@@ -4,10 +4,16 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController {
     private let settings: RoverSettings
+    private let keychain: KeychainStore
+    private let safety: SafetyController
     private var window: NSWindow?
 
-    init(settings: RoverSettings) {
+    init(settings: RoverSettings,
+         keychain: KeychainStore,
+         safety: SafetyController) {
         self.settings = settings
+        self.keychain = keychain
+        self.safety = safety
     }
 
     func show() {
@@ -18,7 +24,13 @@ final class SettingsWindowController {
             return
         }
 
-        let host = NSHostingController(rootView: SettingsView(settings: settings))
+        let host = NSHostingController(
+            rootView: SettingsView(
+                settings: settings,
+                keychain: keychain,
+                safety: safety
+            )
+        )
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 520, height: 420),
             styleMask: [.titled, .closable, .miniaturizable],

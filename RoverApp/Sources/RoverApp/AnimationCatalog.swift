@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 
 enum RoverState: String, CaseIterable {
-    case idle, sleep, speak, startSpeak, endSpeak
+    case idle, idleFidget, sleep, speak, startSpeak, endSpeak
     case eat, reading, getAttention, ashamed, haf, lick, exit
 }
 
@@ -17,8 +17,9 @@ final class AnimationCatalog {
     static let shared = AnimationCatalog()
 
     private let folderForState: [RoverState: [String]] = [
-        .idle: ["_1Idle", "_2Idle", "_3Idle", "_4Idle", "_5Idle",
-                "_6Idle", "_7Idle", "_8Idle", "_9Idle", "_10Idle"],
+        .idle: ["_1Idle"],
+        .idleFidget: ["_2Idle", "_3Idle", "_4Idle", "_5Idle",
+                      "_6Idle", "_7Idle", "_8Idle", "_9Idle", "_10Idle"],
         .sleep: ["Sleep"],
         .speak: ["Speak"],
         .startSpeak: ["Start_Speak"],
@@ -33,7 +34,7 @@ final class AnimationCatalog {
     ]
 
     private let fpsForState: [RoverState: Double] = [
-        .idle: 10, .sleep: 6, .speak: 14, .startSpeak: 14, .endSpeak: 14,
+        .idle: 10, .idleFidget: 10, .sleep: 6, .speak: 14, .startSpeak: 14, .endSpeak: 14,
         .eat: 12, .reading: 8, .getAttention: 12, .ashamed: 10,
         .haf: 12, .lick: 10, .exit: 12
     ]

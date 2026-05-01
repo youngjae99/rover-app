@@ -49,5 +49,13 @@ if [[ -d "$RES_BUNDLE" ]]; then
     cp -R "$RES_BUNDLE" "$APP_BUNDLE/RoverApp_RoverApp.bundle"
 fi
 
+# Ad-hoc codesign so macOS TCC keys (Accessibility, Screen Recording)
+# remain stable across rebuilds. We sign the main executable only — the
+# SPM resource bundle lives outside Contents/ and would trip up `--deep`.
+# A stable code hash on the binary is what TCC actually keys on.
+echo "→ codesign (ad-hoc, binary only)"
+codesign --force --sign - "$APP_BUNDLE/Contents/MacOS/$EXEC_NAME" 2>&1 \
+    | grep -v "replacing existing signature" || true
+
 echo "✓ built $APP_BUNDLE"
 echo "  open $APP_BUNDLE   # to launch"

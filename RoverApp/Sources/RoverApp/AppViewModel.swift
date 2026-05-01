@@ -23,17 +23,44 @@ final class AppViewModel: ObservableObject {
     @Published var maxBubbleScrollHeight: CGFloat = 420
     let settings: RoverSettings
 
-    private let runner: ClaudeRunner
+    private let coordinator: AgentCoordinator
     private var sleepTimer: Timer?
     private var bubbleHideTimer: Timer?
 
-    init(settings: RoverSettings) {
+    init(settings: RoverSettings, coordinator: AgentCoordinator) {
         self.settings = settings
-        self.runner = ClaudeRunner()
-        self.runner.onEvent = { [weak self] event in
+        self.coordinator = coordinator
+        coordinator.onEvent = { [weak self] event in
             self?.handleEvent(event)
         }
+        coordinator.onTriggerFired = { [weak self] ctx in
+            self?.handleTriggerFired(ctx)
+        }
         scheduleSleepCheck()
+    }
+
+    private func handleTriggerFired(_ ctx: TriggerContext) {
+        cancelBubbleHide()
+        if ctx.requiresUserPrompt {
+            roverState = .getAttention
+            bubbleMode = .input
+            return
+        }
+        // Animation-only / hint-only trigger.
+        roverState = .getAttention
+        if let hint = ctx.promptHint, !hint.isEmpty {
+            responseText = hint
+            bubbleMode = .showing
+            bubbleHideTimer = Timer.scheduledTimer(withTimeInterval: 6, repeats: false) { [weak self] _ in
+                Task { @MainActor in
+                    guard let self else { return }
+                    if case .showing = self.bubbleMode {
+                        self.bubbleMode = .hidden
+                        self.responseText = ""
+                    }
+                }
+            }
+        }
     }
 
     var isStreaming: Bool {
@@ -89,16 +116,11 @@ final class AppViewModel: ObservableObject {
         bubbleMode = .streaming
         roverState = .startSpeak
         SoundPlayer.shared.play("Haf.wav", volume: 0.4)
-        runner.send(prompt: prompt, options: ClaudeRunner.LaunchOptions(
-            cwd: settings.workingDirectory,
-            model: settings.model,
-            systemPrompt: settings.systemPrompt,
-            allowDangerously: settings.allowDangerously
-        ))
+        coordinator.sendUserPrompt(prompt)
     }
 
     func cancelStream() {
-        runner.cancel()
+        coordinator.cancel()
         bubbleMode = responseText.isEmpty ? .hidden : .showing
         statusText = settings.s.statusCancelled
         roverState = .endSpeak
@@ -121,46 +143,38 @@ final class AppViewModel: ObservableObject {
         SoundPlayer.shared.play(pick.1, volume: 0.4)
     }
 
-    private func handleEvent(_ event: ClaudeEvent) {
+    private func handleEvent(_ event: AgentEvent) {
+        if let state = AnimationMapper.mapEventToState(event) {
+            roverState = state
+        }
         switch event {
         case .sessionStarted:
             break
-        case .status(let status):
-            statusText = status
-            if status == "requesting" {
-                roverState = .speak
-            }
+        case .statusChanged(let s):
+            statusText = s
         case .textDelta(let text):
             responseText += text
             if bubbleMode != .streaming { bubbleMode = .streaming }
-            roverState = .speak
-        case .toolUse(let name, _):
+        case .reasoning:
+            break
+        case .observabilityToolCall(let name, _):
             statusText = name.lowercased()
-            roverState = animationFor(tool: name)
             SoundPlayer.shared.play("Tap.wav", volume: 0.25)
-        case .toolResult(_, let isError):
-            if isError {
-                roverState = .ashamed
-            }
-        case .complete(let result, _, _):
+        case .observabilityToolError:
+            break
+        case .computerUseRequest(let action, _):
+            statusText = action.shortLabel
+            SoundPlayer.shared.play("Tap.wav", volume: 0.25)
+        case .computerUseResult:
+            break
+        case .turnCompleted(let result, _, _):
             if responseText.isEmpty { responseText = result }
             statusText = ""
             bubbleMode = responseText.isEmpty ? .hidden : .showing
-            roverState = .endSpeak
             scheduleSleepCheck()
         case .error(let text):
             statusText = ""
             bubbleMode = .error(text)
-            roverState = .ashamed
-        }
-    }
-
-    private func animationFor(tool: String) -> RoverState {
-        switch tool.lowercased() {
-        case "read", "glob", "grep": return .reading
-        case "bash", "shell", "edit", "write", "notebookedit": return .eat
-        case "webfetch", "websearch": return .lick
-        default: return .eat
         }
     }
 

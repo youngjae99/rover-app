@@ -29,15 +29,34 @@ final class SpriteAnimator: ObservableObject {
         frameIndex = 0
         currentImage = newClip.frames.first
         guard newClip.frames.count > 1 else { return }
-        let interval = 1.0 / max(newClip.fps, 1)
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.tick() }
-        }
         if next == .idle {
             scheduleIdleVariety()
+            holdIdleEyesOpen()
         } else {
             idleSwitchTimer?.invalidate()
             idleSwitchTimer = nil
+            startTickingTimer(fps: newClip.fps)
+        }
+    }
+
+    private func startTickingTimer(fps: Double) {
+        let interval = 1.0 / max(fps, 1)
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.tick() }
+        }
+    }
+
+    private func holdIdleEyesOpen() {
+        guard let clip else { return }
+        timer?.invalidate()
+        frameIndex = 0
+        currentImage = clip.frames.first
+        let hold = Double.random(in: 1.5...3.0)
+        timer = Timer.scheduledTimer(withTimeInterval: hold, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.state == .idle, let clip = self.clip else { return }
+                self.startTickingTimer(fps: clip.fps)
+            }
         }
     }
 
@@ -46,6 +65,10 @@ final class SpriteAnimator: ObservableObject {
         frameIndex += 1
         if frameIndex >= clip.frames.count {
             if clip.loops {
+                if state == .idle {
+                    holdIdleEyesOpen()
+                    return
+                }
                 frameIndex = 0
             } else {
                 timer?.invalidate()
@@ -63,11 +86,11 @@ final class SpriteAnimator: ObservableObject {
 
     private func scheduleIdleVariety() {
         idleSwitchTimer?.invalidate()
-        let delay = Double.random(in: 5.0...11.0)
+        let delay = Double.random(in: 15.0...30.0)
         idleSwitchTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 guard let self, self.state == .idle else { return }
-                self.applyState(.idle)
+                self.applyState(.idleFidget)
             }
         }
     }

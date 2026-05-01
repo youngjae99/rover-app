@@ -26,30 +26,59 @@ The full app in action (Rover floating on your desktop, opening the bubble, stre
 
 ## What is this
 
-In 2001, Microsoft put a friendly guide into Windows XP's search panel: a cartoon Labrador named Rover who watched while you typed, blinked, looked around, and went to sleep when you stopped. He was retired in Vista. This project brings him back, twenty five years later, as a floating macOS pet.
+In 2001, Microsoft put a friendly guide into Windows XP's search panel: a cartoon Labrador named Rover who watched while you typed, blinked, looked around, and went to sleep when you stopped. He was retired in Vista. This project brings him back, twenty five years later, as a floating macOS pet that drives modern coding agents.
 
-The original sprite frames and sound effects are kept exactly as they were. The difference is what he does: instead of running Windows search, he forwards your prompt to the local `claude` CLI and animates against the live token stream. When Claude is reading files, Rover reads. When Claude runs a Bash tool, Rover eats. When Claude errors out, Rover looks ashamed. He sleeps after a minute of inactivity and wakes when you click him.
+The original sprite frames and sound effects are kept as they shipped. What changed is what he does. Click Rover, type a prompt, and he forwards it to one of three pluggable backends: the local Claude Code CLI, the local OpenAI Codex CLI, or Anthropic's Computer Use API (which lets him read your screen and operate the mouse and keyboard for you). His animations track the live event stream from whichever backend is active. When the agent reads files, Rover reads. When it runs a shell tool, Rover eats. When something errors, Rover looks ashamed. He sleeps after a minute of inactivity, and clicking him wakes him up.
 
 This is a nostalgia project. It is not affiliated with Microsoft and has no commercial intent.
 
 ## Features
 
+### Pet behavior
+
 - Floating, borderless, transparent window. Drag him anywhere on screen.
-- XP Luna style speech bubble. Click Rover to open the input field. Press Enter to send.
-- 24 animation states and ~470 PNG frames sourced directly from the original assets.
+- XP Luna style speech bubble. Click Rover to open the input field, press Enter to send.
+- 24 animation states sourced from the original sprite sheet (idle, idle fidgets, sleep, speak, eat, reading, ashamed, lick, haf, exit).
 - Original WAV sound effects (Haf, Lick, Whine, Snoring, Tap).
-- Live `claude -p --output-format stream-json` parser. Tool use is mapped to animations:
-  - `Read`, `Glob`, `Grep` to Reading
-  - `Bash`, `Edit`, `Write` to Eat
-  - `WebFetch`, `WebSearch` to Lick
-  - tool errors to Ashamed
-- Settings window with four tabs: General, Model, System Prompt, Advanced.
-- Model picker for Claude Opus 4.7, Sonnet 4.6, Haiku 4.5.
-- Persistent system prompt override (sent via `claude --append-system-prompt`).
-- Localized in English and Korean. System language is auto detected with a manual override.
-- Optional menu bar icon (paw symbol) for quick access from anywhere.
 - Sleep after 60 seconds of inactivity. Click to wake.
-- Speech bubble grows upward from a fixed bottom anchor and never crosses the top of the screen. Long responses scroll inside the bubble.
+- Bubble grows upward from a fixed bottom anchor, scrolls when content exceeds the visible area, and never crosses the top of the screen.
+
+### Multiple backends
+
+- **Claude Code CLI** (default). Wraps `claude -p --output-format stream-json --include-partial-messages`, parses NDJSON line by line, and maps tool use to Rover animations.
+- **Codex CLI**. Same idea against the OpenAI Codex CLI.
+- **Anthropic Computer Use** (beta). Talks to the Anthropic API directly using the `claude-opus-4-7` Computer Use loop. Roger captures screenshots, sends them to the model, and dispatches the resulting mouse/keyboard/scroll/key actions on your machine. API key is stored in macOS Keychain.
+
+### Triggers
+
+Rover does not have to wait for a click. Optional triggers, each toggleable in Settings:
+
+- **Global hotkey** (⌘⇧Space). Summon the bubble from anywhere, even when another app is full-screen.
+- **Active app change**. When you switch to a new app he plays a short animation and (optionally) shows a hint. No agent calls, zero cost.
+- **Periodic screen observation**. On a configurable interval he sends a screenshot to Computer Use to check whether you need help. Each glance costs API credits, so the interval defaults to 10 minutes.
+- **Scheduled tasks**. Per-day HH:MM entries with a fixed prompt that runs through the active backend.
+
+### Safety
+
+- **Dry-run mode** (Settings → Advanced). Mouse and keyboard tools log the action but do not execute it. Useful while learning what the agent will try.
+- **Esc cancels the agent loop** at any time, mid-tool.
+- All mouse, keyboard, and screenshot tool calls go through a single dispatcher that respects the dry-run flag and per-action delay.
+- API keys live in macOS Keychain, never in plain config files.
+- TCC permission prompter walks you through Accessibility, Screen Recording, and Apple Events on first run.
+
+### Settings (six tabs)
+
+- General: language (System / English / 한국어), menu bar toggle, sound toggle, working directory.
+- Backend: pick the active backend, paste your Anthropic API key.
+- Triggers: enable and tune each of the four triggers above.
+- Model: pick Claude Opus 4.7, Sonnet 4.6, or Haiku 4.5 for CLI backends.
+- System Prompt: persistent append-system-prompt with reset to default per language.
+- Advanced: dry-run toggle, action delay, `--dangerously-skip-permissions` for the CLI backends, version and binary paths.
+
+### Localization
+
+- English and Korean.
+- System language is auto detected. Manual override in Settings.
 
 ## Install
 
@@ -68,7 +97,10 @@ Requirements:
 
 - macOS 14 or later.
 - Swift 5.9 or later. Command Line Tools is enough; full Xcode is not required.
-- The `claude` CLI installed and reachable. The app probes a few common paths automatically (`/Applications/cmux.app/Contents/Resources/bin/claude`, `/opt/homebrew/bin/claude`, `/usr/local/bin/claude`, `~/.claude/local/claude`).
+- One of the following backends, depending on which you want to use:
+  - **Claude Code CLI**. Probed automatically at `/Applications/cmux.app/Contents/Resources/bin/claude`, `/opt/homebrew/bin/claude`, `/usr/local/bin/claude`, `~/.claude/local/claude`.
+  - **Codex CLI**. Probed at the standard `codex` install paths.
+  - **Anthropic Computer Use**. No CLI required, but you do need an Anthropic API key (paste it into Settings → Backend, stored in Keychain).
 
 ```bash
 git clone https://github.com/youngjae99/rover-app.git
@@ -76,7 +108,15 @@ cd rover-app/RoverApp
 ./run.sh
 ```
 
-`run.sh` syncs the assets from `rover/Resources/` into the SwiftPM resource directory, runs `swift build`, assembles `Rover.app`, and opens it.
+`run.sh` syncs the assets from `rover/Resources/` into the SwiftPM resource directory, runs `swift build`, assembles and ad-hoc codesigns `Rover.app`, then opens it. The ad-hoc signature is what keeps macOS TCC permissions stable across rebuilds (Accessibility, Screen Recording, Apple Events).
+
+### Permissions on first run
+
+Computer Use, the global hotkey, and the active-app trigger each need different macOS permissions. Rover prompts you the first time each is needed:
+
+- **Accessibility** (mouse and keyboard control, global hotkey).
+- **Screen Recording** (periodic screen observation, Computer Use screenshots).
+- **Apple Events** (active-app trigger uses AEs to read which app is in the foreground).
 
 ## Building a DMG
 
@@ -93,70 +133,128 @@ The output is `Rover.dmg` next to the `.app`. Drop it on a GitHub Release.
 ## How it works
 
 ```
-user clicks Rover
+trigger        click             ⌘⇧Space hotkey
+hotkey         active-app        scheduled task
+periodic       change            etc.
+        \      |       /
+         v     v      v
+       TriggerContext
+              |
+              v
+       AppViewModel
+              |
+              v
+       AgentCoordinator
+              |
+   +----------+-----------+--------------------+
+   v                      v                    v
+ClaudeCodeCLI         CodexCLI         AnthropicComputerUse
+(stdin -> stream-json) (stdin -> JSON)  (HTTPS, computer-use loop)
+        \                |               /
+         v               v              v
+              AgentEvent stream
+                    |
+        +-----------+-----------+
+        v                       v
+   SpeechBubbleView         AnimationMapper
+   (text accumulates,       (event -> RoverState)
+    autoscroll)                  |
+                                  v
+                          SpriteAnimator
+                          (NSImage sequence,
+                           8 to 14 fps)
+                                  |
+                                  v
+                          RoverSpriteView
+```
+
+For the Computer Use backend, the loop additionally goes:
+
+```
+AnthropicAPIClient                       (HTTPS, beta header)
         |
         v
-SpeechBubbleView (input field)
-        |
-        | user types, presses Enter
-        v
-ClaudeRunner.send(prompt)
-        |
-        | stdin
-        v
-$ claude -p --output-format stream-json --include-partial-messages
-         --model <opus|sonnet|haiku>
-         --append-system-prompt "<custom>"
-        |
-        | NDJSON, one JSON object per line
-        v
-ClaudeRunner.handleLine -> ClaudeEvent
+ComputerUseAction (screenshot / click / type / key / scroll / ...)
         |
         v
-AppViewModel.handleEvent
+SafetyController (dry-run? action delay?)
         |
-        +--> SpeechBubbleView (responseText accumulates, autoscroll)
+        v
+ComputerUseDispatcher
         |
-        +--> RoverState (Speak, Eat, Reading, Ashamed, ...)
-                 |
-                 v
-            SpriteAnimator (NSImage sequence at 8 to 14 fps)
-                 |
-                 v
-            RoverSpriteView
+   +----+----+----+
+   v    v    v    v
+Screenshot Mouse Keyboard ActiveWindow
+   Tool   Tool    Tool        Tool
 ```
 
 ## Repository layout
 
 ```
 rover-app/
-  rover/                         original Microsoft Rover assets
-    Resources/                   PNG sprites, WAV sounds, EN and RU text files
-    Animation.cs                 reference Windows Forms implementation
-    ...
-  RoverApp/                      macOS Swift app
-    Package.swift                SwiftPM manifest
-    Info.plist                   bundle metadata
-    build.sh                     sync assets, swift build, assemble .app
-    run.sh                       build then open
-    package.sh                   release build, create-dmg
+  rover/                              original Microsoft Rover assets
+    Resources/                        PNG sprites, WAV sounds, EN and RU text
+    Animation.cs                      reference Windows Forms implementation
+  docs/                               README assets (hero gif, states strip)
+  RoverApp/                           macOS Swift app
+    Package.swift                     SwiftPM manifest
+    Info.plist                        bundle metadata, TCC usage strings
+    build.sh                          sync assets, swift build, ad-hoc codesign
+    run.sh                            build then open
+    package.sh                        release build, create-dmg
     Sources/RoverApp/
-      main.swift                       NSApp entry, window and menu setup
-      FloatingWindow.swift             borderless transparent NSWindow,
-                                       intrinsic size tracking host view
-      RoverPetView.swift               sprite, drag handling, right click menu
-      RoverSpriteView.swift            frame sequence animator
-      SpeechBubbleView.swift           XP Luna bubble, input, response
-      AppViewModel.swift               state machine, event to animation map
-      ClaudeRunner.swift               claude CLI subprocess, NDJSON parser
-      AnimationCatalog.swift           per state PNG sequence loading
-      SoundPlayer.swift                AVAudioPlayer pool
-      Settings.swift                   UserDefaults backed settings
-      SettingsView.swift               settings window UI
+      main.swift                      NSApp entry, wires coordinator + triggers
+      FloatingWindow.swift            borderless transparent NSWindow,
+                                      intrinsic size tracking host view
+      RoverPetView.swift              sprite, drag handling, right click menu
+      RoverSpriteView.swift           frame sequence animator
+      SpeechBubbleView.swift          XP Luna bubble, input, response
+      AppViewModel.swift              UI state machine
+      AnimationCatalog.swift          per state PNG sequence loading
+      SoundPlayer.swift               AVAudioPlayer pool
+      Settings.swift                  UserDefaults backed settings
+      SettingsView.swift              six-tab settings UI
       SettingsWindowController.swift
-      MenuBarController.swift          NSStatusItem (paw)
-      Localization.swift               AppStrings (en, ko)
-      Theme.swift                      XP color tokens, cursor helper
+      MenuBarController.swift         NSStatusItem (paw)
+      Localization.swift              AppStrings (en, ko)
+      Theme.swift                     XP color tokens, cursor helper
+
+      Agents/                         pluggable backends
+        AgentBackend.swift            protocol
+        AgentEvent.swift              event enum + ComputerUseAction
+        ClaudeCodeCLIBackend.swift    Claude Code CLI wrapper
+        CodexCLIBackend.swift         Codex CLI wrapper
+        AnthropicComputerUseBackend.swift  Anthropic Computer Use loop
+        AnthropicAPIClient.swift      HTTPS client
+
+      Coordinator/
+        AgentCoordinator.swift        single dispatch surface
+        AnimationMapper.swift         AgentEvent -> RoverState
+
+      Triggers/                       optional autonomous hooks
+        Trigger.swift                 protocol
+        HotkeyTrigger.swift           ⌘⇧Space global hotkey
+        ActiveAppTrigger.swift        active-app change
+        PeriodicScreenTrigger.swift   periodic screen observation
+        ScheduleTrigger.swift         scheduled HH:MM tasks
+
+      ComputerUse/
+        ComputerUseDispatcher.swift   single funnel for tool actions
+        CoordinateScaler.swift
+        ScreenInfo.swift
+        Safety/
+          SafetyController.swift      dry-run + action delay + Esc
+        Tools/
+          ScreenshotTool.swift
+          MouseTool.swift             CGEvent based clicks, moves, scroll
+          KeyboardTool.swift
+          ActiveWindowTool.swift
+
+      Security/
+        Keychain.swift                Anthropic API key storage
+
+      Permissions/
+        PermissionPrompter.swift      TCC walkthrough on first use
 ```
 
 ## Keyboard and mouse
@@ -167,17 +265,17 @@ rover-app/
 | Drag Rover                     | Move the floating window                        |
 | Right click Rover              | Context menu (Ask, Sound, Model, Settings, Quit)|
 | Click the menu bar paw icon    | Open the input bubble from anywhere             |
+| ⌘⇧Space                        | Global hotkey (Settings → Triggers to enable)   |
 | Cmd+,                          | Settings window                                 |
-| Esc                            | Dismiss the bubble                              |
+| Esc                            | Dismiss the bubble, cancel the running agent    |
 | Cmd+Q                          | Quit                                            |
 
 ## Limitations and TODO
 
-- Conversation memory across prompts (`claude --continue` or `--resume`). Each prompt currently starts a fresh session.
+- Conversation memory across prompts. Each prompt currently starts a fresh session for the CLI backends. Computer Use turns are stateful within a single run, but not across runs.
 - Markdown rendering for responses. Plain text only at the moment.
-- Global system hotkey (for example Cmd+Space style). Today the menu bar icon is the closest equivalent.
 - App icon (`.icns`). The bundle ships without one.
-- Code signing and notarization. Without these, Gatekeeper requires a right click Open on first launch.
+- Code signing and notarization for distribution. Local builds are ad-hoc signed (enough to keep TCC stable), but Gatekeeper still requires a right-click Open on first launch from a DMG.
 - Auto update.
 - A UI to set the path to the `claude` CLI for installations that do not match the auto detected paths.
 

@@ -37,6 +37,28 @@ final class RoverSettings: ObservableObject {
     @Published var language: AppLanguage {
         didSet { save("rover.language", language.rawValue) }
     }
+    @Published var activeBackendId: BackendID {
+        didSet { save("rover.backend", activeBackendId.rawValue) }
+    }
+
+    // Triggers
+    @Published var hotkeyEnabled: Bool { didSet { save("rover.trig.hotkey", hotkeyEnabled) } }
+    @Published var activeAppEnabled: Bool { didSet { save("rover.trig.activeApp", activeAppEnabled) } }
+    @Published var activeAppDebounceSec: Int {
+        didSet { save("rover.trig.activeAppDebounceSec", activeAppDebounceSec) }
+    }
+    @Published var periodicEnabled: Bool { didSet { save("rover.trig.periodic", periodicEnabled) } }
+    @Published var periodicIntervalSec: Int {
+        didSet { save("rover.trig.periodicIntervalSec", periodicIntervalSec) }
+    }
+    @Published var scheduleEnabled: Bool { didSet { save("rover.trig.schedule", scheduleEnabled) } }
+    @Published var schedules: [ScheduleEntry] {
+        didSet {
+            if let data = try? JSONEncoder().encode(schedules) {
+                UserDefaults.standard.set(data, forKey: "rover.schedules")
+            }
+        }
+    }
 
     // MARK: - Static
 
@@ -81,6 +103,22 @@ final class RoverSettings: ObservableObject {
         self.showMenuBarIcon = (d.object(forKey: "rover.menuBar") as? Bool) ?? true
         self.soundEnabled = (d.object(forKey: "rover.sound") as? Bool) ?? true
         self.allowDangerously = (d.object(forKey: "rover.dangerous") as? Bool) ?? false
+        let storedBackend = d.string(forKey: "rover.backend").flatMap(BackendID.init(rawValue:))
+        self.activeBackendId = storedBackend ?? .claudeCodeCLI
+
+        self.hotkeyEnabled = (d.object(forKey: "rover.trig.hotkey") as? Bool) ?? false
+        self.activeAppEnabled = (d.object(forKey: "rover.trig.activeApp") as? Bool) ?? false
+        self.activeAppDebounceSec = (d.object(forKey: "rover.trig.activeAppDebounceSec") as? Int) ?? 30
+        self.periodicEnabled = (d.object(forKey: "rover.trig.periodic") as? Bool) ?? false
+        self.periodicIntervalSec = (d.object(forKey: "rover.trig.periodicIntervalSec") as? Int) ?? 600
+        self.scheduleEnabled = (d.object(forKey: "rover.trig.schedule") as? Bool) ?? false
+        if let data = d.data(forKey: "rover.schedules"),
+           let decoded = try? JSONDecoder().decode([ScheduleEntry].self, from: data) {
+            self.schedules = decoded
+        } else {
+            self.schedules = []
+        }
+
         SoundPlayer.shared.enabled = self.soundEnabled
     }
 

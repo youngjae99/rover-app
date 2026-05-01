@@ -62,6 +62,8 @@ struct AppStrings {
     // MARK: settings tabs
     var settingsTitle: String { t("Rover Settings", "Rover 설정") }
     var tabGeneral: String { t("General", "일반") }
+    var tabBackend: String { t("Backend", "백엔드") }
+    var tabTriggers: String { t("Triggers", "트리거") }
     var tabModel: String { t("Model", "모델") }
     var tabPrompt: String { t("System Prompt", "시스템 프롬프트") }
     var tabAdvanced: String { t("Advanced", "고급") }
@@ -108,6 +110,85 @@ struct AppStrings {
     var aboutVersion: String { t("Version", "버전") }
     var aboutBundle: String { t("Bundle", "번들") }
     var aboutClaudeCLI: String { t("Claude CLI", "Claude CLI") }
+    var aboutCodexCLI: String { t("Codex CLI", "Codex CLI") }
+
+    // MARK: settings - backend
+    var sectionBackend: String { t("Active backend", "활성 백엔드") }
+    var sectionAnthropicKey: String { t("Anthropic API key", "Anthropic API 키") }
+    var anthropicKeyPlaceholder: String { t("sk-ant-…", "sk-ant-…") }
+    var anthropicKeySave: String { t("Save", "저장") }
+    var anthropicKeyClear: String { t("Clear", "삭제") }
+    var anthropicKeyStored: String { t("Stored in Keychain.", "Keychain에 저장됨.") }
+    var anthropicKeyMissing: String { t("Not set — Computer Use will refuse to run.", "미설정 — Computer Use는 실행할 수 없어.") }
+
+    // MARK: settings - safety
+    var sectionSafety: String { t("Safety", "안전") }
+    var safetyDryRun: String { t("Dry-run mode (don't post events)", "Dry-run 모드 (실제 이벤트 안 보냄)") }
+    var safetyDryRunHint: String {
+        t("When on, mouse / keyboard tools log what they would do but don't actually click or type. Esc cancels the agent loop at any time.",
+          "켜면 마우스 / 키보드 도구는 실행 의도만 기록하고 실제로는 클릭/타이핑하지 않아. 도중에 Esc를 누르면 에이전트 루프가 즉시 중단돼.")
+    }
+    var safetyActionDelay: String { t("Action delay", "액션 간격") }
+
+    // MARK: settings - triggers
+    var sectionHotkey: String { t("Global hotkey", "전역 핫키") }
+    var hotkeyEnabled: String { t("Enable ⌘⇧Space hotkey", "⌘⇧Space 핫키 활성화") }
+    var hotkeyHint: String {
+        t("Press ⌘⇧Space anywhere to summon Roger. The bubble opens with the input field focused.",
+          "어디서든 ⌘⇧Space를 눌러 Roger를 호출. 입력 포커스된 말풍선이 열림.")
+    }
+    var sectionActiveApp: String { t("Active app changes", "활성 앱 변화") }
+    var activeAppEnabled: String { t("Animate when I switch apps", "앱 전환 시 애니메이션") }
+    var activeAppDebounce: String { t("Debounce", "쿨타임") }
+    var activeAppHint: String {
+        t("Roger animates and shows a brief speech bubble when you switch to a new app. No agent calls — zero cost.",
+          "다른 앱으로 전환하면 Roger가 잠깐 애니메이션 + 말풍선. 에이전트 호출 없음 — 비용 0.")
+    }
+    var sectionPeriodic: String { t("Periodic screen observation", "주기적 화면 관찰") }
+    var periodicEnabled: String { t("Glance at my screen periodically", "주기적으로 화면 보기") }
+    var periodicInterval: String { t("Interval", "주기") }
+    var periodicHint: String {
+        t("Sends a screenshot to Computer Use on every interval to ask if you need help. Each glance costs API credits — keep the interval long.",
+          "매 주기마다 스크린샷을 Computer Use에 보내서 도움 필요한지 판단. 호출당 API 비용 발생 — 주기를 길게 유지해.")
+    }
+    var sectionSchedules: String { t("Scheduled tasks", "예약 작업") }
+    var scheduleEnabled: String { t("Run scheduled prompts", "예약 프롬프트 실행") }
+    var scheduleAdd: String { t("Add", "추가") }
+    var scheduleRemove: String { t("Remove", "삭제") }
+    var scheduleTime: String { t("Time (HH:MM)", "시간 (HH:MM)") }
+    var schedulePrompt: String { t("Prompt", "프롬프트") }
+    var scheduleHint: String {
+        t("Each entry fires once per day at the given time. Computer Use runs the prompt — make sure your API key is set.",
+          "각 항목이 매일 정해진 시각에 한 번 실행. Computer Use로 프롬프트 실행 — API 키 설정 필수.")
+    }
+
+    // MARK: settings - TCC
+    var sectionTccPermissions: String { t("Computer Use permissions", "Computer Use 권한") }
+    var tccAccessibility: String { t("Accessibility (mouse + keyboard)", "Accessibility (마우스 + 키보드)") }
+    var tccScreenRecording: String { t("Screen Recording (screenshots)", "Screen Recording (스크린샷)") }
+    var tccOpenPane: String { t("Open…", "열기…") }
+    var tccPermissionsHint: String {
+        t("Both must be granted for Computer Use to function. macOS may need the app to be re-launched after granting.",
+          "둘 다 허용해야 Computer Use가 동작해. 권한 부여 후 앱 재시작이 필요할 수 있어.")
+    }
+
+    var backendHint: String {
+        t("Choose the engine that drives Roger. Coding agents (Claude Code, Codex) work in the working directory; Computer Use lets Roger see your screen and click for you.",
+          "Roger를 움직이는 엔진을 선택해. 코딩 에이전트(Claude Code, Codex)는 작업 디렉토리에서 동작하고, Computer Use는 Roger가 화면을 보고 직접 클릭/타이핑할 수 있게 해.")
+    }
+    func backendBlurb(_ id: BackendID) -> String {
+        switch id {
+        case .claudeCodeCLI:
+            return t("Spawns the local `claude` CLI in stream-json mode.",
+                     "로컬 `claude` CLI를 stream-json 모드로 실행.")
+        case .codexCLI:
+            return t("Spawns the local `codex exec --json` CLI. Auth comes from your existing Codex login.",
+                     "로컬 `codex exec --json`을 실행. 인증은 기존 Codex 로그인을 사용.")
+        case .anthropicComputerUse:
+            return t("Direct Anthropic API + Computer Use tool. Roger drives your desktop. Requires API key + permissions.",
+                     "Anthropic API 직통 + Computer Use 도구. Roger가 데스크톱을 직접 움직임. API key + 권한 필요.")
+        }
+    }
 
     // MARK: starters
     var starterPrimary: [LocalizedStarter] {
