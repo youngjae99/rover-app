@@ -115,6 +115,24 @@ struct AppStrings {
     var aboutClaudeCLI: String { t("Claude CLI", "Claude CLI") }
     var aboutCodexCLI: String { t("Codex CLI", "Codex CLI") }
 
+    // MARK: settings - updates
+    var sectionUpdates: String { t("Updates", "업데이트") }
+    var updatesCheckButton: String { t("Check now", "지금 확인") }
+    var updatesIdleHint: String {
+        t("Compares this build's version to the latest GitHub release.",
+          "현재 빌드 버전을 GitHub 최신 릴리즈와 비교.")
+    }
+    var updatesChecking: String { t("Checking…", "확인 중…") }
+    var updatesUpToDate: String { t("Up to date.", "최신 버전.") }
+    func updatesAvailable(_ version: String) -> String {
+        t("v\(version) is available.", "v\(version) 사용 가능.")
+    }
+    var updatesDownload: String { t("Download", "다운로드") }
+    var updatesViewRelease: String { t("Release notes", "릴리즈 노트") }
+    func updatesFailed(_ message: String) -> String {
+        t("Check failed: \(message)", "확인 실패: \(message)")
+    }
+
     // MARK: settings - permission bubble
     var sectionPermissionBubble: String { t("Permission bubble", "권한 버블") }
     var permBubbleToggle: String { t("Show permission requests in Rover", "권한 요청을 Rover 말풍선에 표시") }

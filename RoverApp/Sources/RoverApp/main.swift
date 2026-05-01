@@ -30,10 +30,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         return s
     }()
+    lazy var updateChecker = UpdateChecker()
     lazy var settingsController = SettingsWindowController(
         settings: settings,
         keychain: keychain,
-        safety: safety
+        safety: safety,
+        updateChecker: updateChecker
     )
 
     lazy var hotkeyTrigger = HotkeyTrigger(isEnabled: settings.hotkeyEnabled)
@@ -138,6 +140,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         wireTriggers()
         wireHookServer()
+
+        // One-shot best-effort check on launch. The result lives on the
+        // updateChecker; SettingsView surfaces it next time the user
+        // opens Settings → Advanced → Updates. No popup — we don't want
+        // to nag.
+        updateChecker.check()
     }
 
     /// Start / stop the local hook server and (un)install per-agent

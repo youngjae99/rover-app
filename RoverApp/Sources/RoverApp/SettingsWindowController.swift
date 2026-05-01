@@ -6,14 +6,17 @@ final class SettingsWindowController {
     private let settings: RoverSettings
     private let keychain: KeychainStore
     private let safety: SafetyController
+    private let updateChecker: UpdateChecker
     private var window: NSWindow?
 
     init(settings: RoverSettings,
          keychain: KeychainStore,
-         safety: SafetyController) {
+         safety: SafetyController,
+         updateChecker: UpdateChecker) {
         self.settings = settings
         self.keychain = keychain
         self.safety = safety
+        self.updateChecker = updateChecker
     }
 
     func show() {
@@ -28,7 +31,8 @@ final class SettingsWindowController {
             rootView: SettingsView(
                 settings: settings,
                 keychain: keychain,
-                safety: safety
+                safety: safety,
+                updateChecker: updateChecker
             )
         )
         let window = NSWindow(

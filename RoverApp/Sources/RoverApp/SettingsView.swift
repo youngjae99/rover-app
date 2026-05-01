@@ -5,6 +5,7 @@ struct SettingsView: View {
     @ObservedObject var settings: RoverSettings
     @ObservedObject var keychain: KeychainStore
     @ObservedObject var safety: SafetyController
+    @ObservedObject var updateChecker: UpdateChecker
     @State private var apiKeyDraft: String = ""
 
     private var s: AppStrings { settings.s }
@@ -334,8 +335,15 @@ struct SettingsView: View {
             }
 
             Section(s.sectionAbout) {
-                LabeledContent(s.aboutVersion, value: "0.2.0")
+                LabeledContent(s.aboutVersion, value: updateChecker.currentVersion)
                 LabeledContent(s.aboutBundle, value: Bundle.main.bundleIdentifier ?? "—")
+            }
+
+            Section(s.sectionUpdates) {
+                updateRow
+                Text(s.updatesIdleHint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -406,6 +414,55 @@ struct SettingsView: View {
             }
         }
         .padding(.vertical, 2)
+    }
+
+    @ViewBuilder
+    private var updateRow: some View {
+        HStack(spacing: 8) {
+            switch updateChecker.status {
+            case .idle:
+                Image(systemName: "circle.dashed")
+                    .foregroundStyle(.secondary)
+                Text(s.updatesIdleHint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button(s.updatesCheckButton) { updateChecker.check() }
+                    .controlSize(.small)
+            case .checking:
+                ProgressView().controlSize(.small).scaleEffect(0.7).frame(width: 14, height: 14)
+                Text(s.updatesChecking).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+            case .upToDate:
+                Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
+                Text(s.updatesUpToDate).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button(s.updatesCheckButton) { updateChecker.check() }
+                    .controlSize(.small)
+            case .available(let update):
+                Image(systemName: "arrow.down.circle.fill").foregroundStyle(.blue)
+                Text(s.updatesAvailable(update.version))
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+                Spacer()
+                Button(s.updatesViewRelease) {
+                    NSWorkspace.shared.open(update.releaseURL)
+                }
+                .controlSize(.small)
+                Button(s.updatesDownload) {
+                    NSWorkspace.shared.open(update.downloadURL)
+                }
+                .controlSize(.small)
+                .keyboardShortcut(.defaultAction)
+            case .failed(let message):
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                Text(s.updatesFailed(message)).font(.caption).foregroundStyle(.orange)
+                    .lineLimit(2).truncationMode(.middle)
+                Spacer()
+                Button(s.updatesCheckButton) { updateChecker.check() }
+                    .controlSize(.small)
+            }
+        }
     }
 
     private func pickCLIBinary(into binding: Binding<String>) {
