@@ -195,7 +195,7 @@ ClaudeCodeCLI         CodexCLI         AnthropicComputerUse
 
 - [ ] **코드 사이닝 + 노터라이즈** (배포용). 현재 ad-hoc 사이닝까지만 — Gatekeeper 가 첫 실행에 우클릭 → Open 을 요구.
 - [ ] **자동 업데이트** (Sparkle).
-- [ ] **권한 버블** — Claude Code 의 `PreToolUse` 훅을 가로채서 말풍선에 Allow / Deny 버튼 (현재 `--dangerously-skip-permissions` 의 정반대 축).
+- [x] **권한 버블** — Claude Code 의 `PreToolUse` 훅을 자동 설치 (Settings → Backend 에서 opt-in) 하고 도구 권한 요청을 말풍선의 Allow / Deny 로 표시. Rover 가 꺼져 있으면 Claude 의 터미널 프롬프트로 폴백.
 - [ ] **마크다운 렌더링** (현재는 plain text 만).
 - [ ] **`claude` CLI 경로 설정 UI** — 자동 탐지 실패 케이스 대비.
 - [ ] **다른 에이전트 옵저버 모드** — Cursor Agent, Gemini CLI, Copilot CLI, opencode 훅.
