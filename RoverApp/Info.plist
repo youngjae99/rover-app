@@ -14,6 +14,10 @@
     <string>Rover</string>
     <key>CFBundleDisplayName</key>
     <string>Rover</string>
+    <key>CFBundleIconFile</key>
+    <string>Rover</string>
+    <key>CFBundleIconName</key>
+    <string>Rover</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
