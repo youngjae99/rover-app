@@ -447,12 +447,7 @@ private struct TranscriptRow: View {
             }
 
         case .assistant:
-            Text(item.text + (item.streaming ? "▌" : ""))
-                .font(XP.font(size: 13))
-                .foregroundStyle(XP.textBody)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .textSelection(.enabled)
+            AssistantMarkdownView(text: item.text, streaming: item.streaming)
 
         case .reasoning:
             HStack(alignment: .top, spacing: 6) {
@@ -521,6 +516,118 @@ private struct TranscriptRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+}
+
+// MARK: - AssistantMarkdownView
+
+/// Render an assistant message with inline markdown (bold, italic,
+/// links, inline `code`) plus fenced ```code blocks as monospaced
+/// callouts. Streaming text skips parsing to avoid flicker on partial
+/// `*foo` / `**bar` tokens, and renders a cursor caret instead.
+private struct AssistantMarkdownView: View {
+    let text: String
+    let streaming: Bool
+
+    var body: some View {
+        if streaming {
+            // Don't try to parse half-complete markdown mid-stream — it
+            // flickers on every token boundary. Render plain with a
+            // cursor and re-parse once the turn finalizes.
+            Text(text + "▌")
+                .font(XP.font(size: 13))
+                .foregroundStyle(XP.textBody)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
+                    switch segment {
+                    case .markdown(let s):
+                        Text(Self.attributed(from: s))
+                            .font(XP.font(size: 13))
+                            .foregroundStyle(XP.textBody)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                    case .code(let s):
+                        Text(s)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(XP.textBody)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                            .padding(8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                    .fill(Color.black.opacity(0.06))
+                            )
+                    }
+                }
+            }
+        }
+    }
+
+    private enum Segment {
+        case markdown(String)
+        case code(String)
+    }
+
+    /// Split `text` into alternating prose / fenced-code segments. We
+    /// look for ``` fences at the start of a line; everything between a
+    /// matched pair becomes a code segment, language tag (if any) is
+    /// dropped from the rendered body.
+    private var segments: [Segment] {
+        var out: [Segment] = []
+        var lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        var buffer: [String] = []
+        var inCode = false
+        var codeBuffer: [String] = []
+        while !lines.isEmpty {
+            let line = lines.removeFirst()
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("```") {
+                if inCode {
+                    out.append(.code(codeBuffer.joined(separator: "\n")))
+                    codeBuffer.removeAll()
+                    inCode = false
+                } else {
+                    if !buffer.isEmpty {
+                        out.append(.markdown(buffer.joined(separator: "\n")))
+                        buffer.removeAll()
+                    }
+                    inCode = true
+                }
+                continue
+            }
+            if inCode {
+                codeBuffer.append(line)
+            } else {
+                buffer.append(line)
+            }
+        }
+        // Trailing unmatched fence — treat the rest as code anyway so the
+        // user still sees something sensible mid-stream.
+        if inCode, !codeBuffer.isEmpty {
+            out.append(.code(codeBuffer.joined(separator: "\n")))
+        }
+        if !buffer.isEmpty {
+            out.append(.markdown(buffer.joined(separator: "\n")))
+        }
+        return out
+    }
+
+    /// Parse a chunk as inline markdown via Foundation's
+    /// AttributedString init. Falls back to a plain AttributedString on
+    /// parse failure (rare — Foundation accepts almost everything).
+    private static func attributed(from text: String) -> AttributedString {
+        var options = AttributedString.MarkdownParsingOptions()
+        options.interpretedSyntax = .inlineOnlyPreservingWhitespace
+        if let s = try? AttributedString(markdown: text, options: options) {
+            return s
+        }
+        return AttributedString(text)
     }
 }
 
