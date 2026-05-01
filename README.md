@@ -216,14 +216,14 @@ For repository layout, see [CONTRIBUTING.md](CONTRIBUTING.md).
 Tracked publicly so contributors can pick something up. PRs welcome on any of these.
 
 - [ ] **Code signing + notarization** for distribution. Local builds are ad-hoc signed (enough to keep TCC stable), but Gatekeeper still requires a right-click Open on first launch from a DMG.
-- [ ] **Auto-update** via Sparkle.
+- [ ] **Sparkle auto-update.** Currently shipping a lighter GitHub-Releases version checker (Settings → Advanced → Updates). Sparkle waits on the signing pipeline.
 - [x] **Permission bubble** — Claude Code `PreToolUse` hook is auto-installed (opt-in via Settings → Backend) and tool permission asks land as Allow / Deny in the speech bubble. Falls back to Claude's terminal prompt when Rover isn't running.
-- [ ] **Markdown rendering** for responses. Plain text only at the moment.
-- [ ] **A UI to set the path to the `claude` CLI** for installations that don't match auto-detected paths.
-- [ ] **Observer mode for other agents** — Cursor Agent, Gemini CLI, Copilot CLI, opencode hooks.
-- [ ] **Sessions HUD** — per-session chips next to Rover for parallel agents.
+- [x] **Markdown rendering** — assistant responses render inline markdown plus fenced code blocks.
+- [x] **A UI to set the path to the `claude` CLI** for installations that don't match auto-detected paths (Settings → Advanced → CLI binaries).
+- [x] **Observer mode for Cursor Agent** — auto-installs hooks at `~/.cursor/hooks.json`. Gemini CLI, Copilot CLI, opencode still TODO.
+- [x] **Sessions HUD** — compact chip beside Rover when the bubble is hidden but the session is in flight.
 - [ ] **Custom themes** — drop a sprite pack in `~/Library/Application Support/Rover/Themes/`.
-- [ ] **Do Not Disturb** mode.
+- [x] **Do Not Disturb** — mutes sounds, drops observer hints, falls back permission asks, suppresses autonomous triggers. Toggle from the menu bar paw icon (it turns into a moon).
 - [ ] **Multi-monitor awareness**.
 
 ---

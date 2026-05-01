@@ -194,14 +194,14 @@ ClaudeCodeCLI         CodexCLI         AnthropicComputerUse
 공개적으로 추적합니다. 어떤 항목이든 PR 환영.
 
 - [ ] **코드 사이닝 + 노터라이즈** (배포용). 현재 ad-hoc 사이닝까지만 — Gatekeeper 가 첫 실행에 우클릭 → Open 을 요구.
-- [ ] **자동 업데이트** (Sparkle).
-- [x] **권한 버블** — Claude Code 의 `PreToolUse` 훅을 자동 설치 (Settings → Backend 에서 opt-in) 하고 도구 권한 요청을 말풍선의 Allow / Deny 로 표시. Rover 가 꺼져 있으면 Claude 의 터미널 프롬프트로 폴백.
-- [ ] **마크다운 렌더링** (현재는 plain text 만).
-- [ ] **`claude` CLI 경로 설정 UI** — 자동 탐지 실패 케이스 대비.
-- [ ] **다른 에이전트 옵저버 모드** — Cursor Agent, Gemini CLI, Copilot CLI, opencode 훅.
-- [ ] **세션 HUD** — Rover 옆 작은 칩으로 동시 세션 추적.
+- [ ] **Sparkle 자동 업데이트.** 현재는 가벼운 GitHub Releases 기반 버전 체커가 들어있음 (Settings → Advanced → Updates). Sparkle 은 사이닝 트랙과 함께.
+- [x] **권한 버블** — Claude Code 의 `PreToolUse` 훅을 자동 설치 (Settings → Backend 에서 opt-in). Rover 가 꺼져 있으면 Claude 의 터미널 프롬프트로 폴백.
+- [x] **마크다운 렌더링** — assistant 응답이 inline markdown + fenced code block 렌더링.
+- [x] **`claude` CLI 경로 설정 UI** (Settings → Advanced → CLI binaries).
+- [x] **Cursor Agent 옵저버 모드** — `~/.cursor/hooks.json` 에 훅 자동 설치. Gemini / Copilot / opencode 는 TODO.
+- [x] **세션 HUD** — 말풍선 닫혀 있을 때 Rover 옆에 활성 세션 칩.
 - [ ] **커스텀 테마** — `~/Library/Application Support/Rover/Themes/` 에 sprite pack 드롭.
-- [ ] **방해 금지 모드**.
+- [x] **방해 금지 모드** — 사운드 / 옵저버 힌트 / 자동 트리거 차단, 권한 요청은 폴백. 메뉴바 발바닥 아이콘이 달 모양으로 바뀜.
 - [ ] **멀티 모니터 인식**.
 
 ---
