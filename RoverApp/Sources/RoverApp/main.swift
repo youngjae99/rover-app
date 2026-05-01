@@ -89,6 +89,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] _ in self?.installMainMenu() }
             .store(in: &cancellables)
 
+        // Claude Code stores sessions per-cwd; resume tokens captured
+        // under one directory cannot be used after the user picks
+        // another. Reset all backends when working directory changes.
+        settings.$workingDirectory
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.coordinator.workingDirectoryChanged() }
+            .store(in: &cancellables)
+
         NotificationCenter.default.publisher(for: NSWindow.didMoveNotification, object: window)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.recomputeBubbleCap() }

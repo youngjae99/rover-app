@@ -51,6 +51,20 @@ final class AgentCoordinator: ObservableObject {
         activeBackend?.cancel()
     }
 
+    /// Drop the active backend's per-conversation state so the next
+    /// `sendUserPrompt` starts a fresh session (no `--resume`, no carried
+    /// API messages).
+    func newConversation() {
+        activeBackend?.resetSession()
+    }
+
+    /// Called when the user changes the working directory in Settings.
+    /// Claude Code stores its session log per cwd, so resuming with a
+    /// session id captured under the old cwd would fail. Reset to be safe.
+    func workingDirectoryChanged() {
+        for backend in backends.values { backend.resetSession() }
+    }
+
     // MARK: - Triggers
 
     /// Called by registered `Trigger`s when they fire. Three behaviours:

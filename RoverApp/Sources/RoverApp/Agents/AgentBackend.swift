@@ -42,4 +42,13 @@ protocol AgentBackend: AnyObject {
     var isRunning: Bool { get }
     func send(turn: AgentTurn)
     func cancel()
+    /// Drop any per-conversation state (session id, in-flight messages,
+    /// cached tool history). Called when the user starts a new
+    /// conversation, switches backends, or changes the working directory
+    /// for backends where that invalidates the resume token.
+    func resetSession()
+}
+
+extension AgentBackend {
+    func resetSession() {}
 }

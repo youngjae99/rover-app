@@ -32,6 +32,10 @@ final class ClaudeCodeCLIBackend: AgentBackend {
         runner.cancel()
     }
 
+    func resetSession() {
+        runner.resetSession()
+    }
+
     private func translate(_ event: ClaudeEvent) {
         switch event {
         case .sessionStarted(let id):

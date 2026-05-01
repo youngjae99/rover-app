@@ -102,6 +102,18 @@ final class AppViewModel: ObservableObject {
         responseText = ""
     }
 
+    /// Drop the conversation history so the next prompt starts a fresh
+    /// Claude Code session (no `--resume`). Visible bubble state is also
+    /// cleared so the input mode shows starters again.
+    func newConversation() {
+        if isStreaming { coordinator.cancel() }
+        coordinator.newConversation()
+        responseText = ""
+        statusText = ""
+        bubbleMode = .input
+        roverState = .getAttention
+    }
+
     func runStarter(_ starter: LocalizedStarter) {
         inputText = starter.prompt
         send()

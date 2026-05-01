@@ -82,6 +82,8 @@ struct RoverPetView: View {
         let s = settings.s
         Button(s.menuAsk) { viewModel.openInput() }
             .keyboardShortcut("k", modifiers: [.command])
+        Button(s.menuNewConversation) { viewModel.newConversation() }
+            .keyboardShortcut("n", modifiers: [.command, .shift])
         Divider()
         Toggle(s.menuSound, isOn: $settings.soundEnabled)
         Toggle(s.menuShowMenuBar, isOn: $settings.showMenuBarIcon)
@@ -116,6 +118,10 @@ struct RoverPetView: View {
         let s = settings.s
         let menu = NSMenu()
         addItem(to: menu, title: s.menuAsk) { viewModel.openInput() }
+        addItem(to: menu, title: s.menuNewConversation,
+                keyEquivalent: "n", modifiers: [.command, .shift]) {
+            viewModel.newConversation()
+        }
         menu.addItem(.separator())
         let soundItem = NSMenuItem(title: s.menuSound, action: nil, keyEquivalent: "")
         soundItem.state = settings.soundEnabled ? .on : .off

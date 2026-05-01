@@ -43,6 +43,18 @@ final class ClaudeRunner {
         process?.isRunning ?? false
     }
 
+    /// Session id captured from the previous turn's `system/init` event. The
+    /// next call to `send` will pass `--resume <id>` so Claude Code keeps the
+    /// conversation history, hooks, and MEMORY.md state across prompts.
+    /// `resetSession()` clears it (used for explicit "new conversation" and
+    /// when switching working directory, since Claude sessions are
+    /// per-cwd).
+    private(set) var lastSessionId: String?
+
+    func resetSession() {
+        lastSessionId = nil
+    }
+
     struct LaunchOptions {
         var cwd: String?
         var model: String?
@@ -67,6 +79,9 @@ final class ClaudeRunner {
             "--verbose",
             "--input-format", "text"
         ]
+        if let sid = lastSessionId, !sid.isEmpty {
+            args.append(contentsOf: ["--resume", sid])
+        }
         if let model = options.model, !model.isEmpty {
             args.append(contentsOf: ["--model", model])
         }
@@ -174,6 +189,7 @@ final class ClaudeRunner {
         let subtype = json["subtype"] as? String
         if subtype == "init", let sid = json["session_id"] as? String {
             sessionId = sid
+            lastSessionId = sid
             onEvent?(.sessionStarted(id: sid))
         } else if subtype == "status", let status = json["status"] as? String {
             onEvent?(.status(status))

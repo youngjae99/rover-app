@@ -58,6 +58,7 @@ struct AppStrings {
     var menuSettings: String { t("Settings…", "설정…") }
     var menuQuit: String { t("Quit Rover", "Rover 종료") }
     var menuShowRover: String { t("Show Rover", "Rover 보이기") }
+    var menuNewConversation: String { t("New conversation", "새 대화 시작") }
 
     // MARK: settings tabs
     var settingsTitle: String { t("Rover Settings", "Rover 설정") }
