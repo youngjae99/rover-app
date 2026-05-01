@@ -135,6 +135,36 @@ final class AppViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Session HUD (chip beside Rover)
+
+    /// Number of tool calls in the current conversation. Drives the chip's
+    /// "N tools" counter.
+    var sessionToolCount: Int {
+        transcript.reduce(into: 0) { count, item in
+            if item.kind == .toolCall { count += 1 }
+        }
+    }
+
+    /// Friendly short name of the active primary backend (the one that
+    /// would handle the user's next prompt). External observer hooks
+    /// don't show up here — they get a transient bubble hint instead.
+    var sessionBackendLabel: String {
+        switch settings.activeBackendId {
+        case .claudeCodeCLI:        return "Claude"
+        case .codexCLI:             return "Codex"
+        case .anthropicComputerUse: return "Computer Use"
+        }
+    }
+
+    /// True iff the chip should be visible: bubble hidden AND something
+    /// actually happened in the current session. We don't show an empty
+    /// "Claude · 0 tools" chip — only after the first tool call lands.
+    var shouldShowSessionChip: Bool {
+        guard bubbleMode == .hidden else { return false }
+        if isStreaming { return true }
+        return sessionToolCount > 0
+    }
+
     private func observerLabel(for event: ObserverEvent) -> String {
         let agent = event.agent.isEmpty ? "agent" : event.agent
         let action: String

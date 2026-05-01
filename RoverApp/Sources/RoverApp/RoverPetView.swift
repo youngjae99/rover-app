@@ -13,6 +13,10 @@ struct RoverPetView: View {
             if viewModel.bubbleMode != .hidden {
                 SpeechBubbleView(tailOffsetFromTrailing: spriteSize / 2)
                     .fixedSize(horizontal: true, vertical: true)
+            } else if viewModel.shouldShowSessionChip {
+                SessionChip()
+                    .onTapGesture { viewModel.toggleBubble() }
+                    .cursor(.pointingHand)
             }
 
             RoverSpriteView()
@@ -180,6 +184,51 @@ private final class MenuActionTarget: NSObject {
     let action: () -> Void
     init(action: @escaping () -> Void) { self.action = action }
     @objc func fire() { action() }
+}
+
+// MARK: - SessionChip
+
+/// Compact pill that sits above Rover when the bubble is hidden but a
+/// session is in flight. Click to expand the bubble and inspect the
+/// full transcript.
+private struct SessionChip: View {
+    @EnvironmentObject var viewModel: AppViewModel
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if viewModel.isStreaming {
+                ProgressView()
+                    .controlSize(.mini)
+                    .scaleEffect(0.65)
+                    .frame(width: 12, height: 12)
+            } else {
+                Image(systemName: "wrench.and.screwdriver.fill")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(XP.textSecondary)
+            }
+            Text(viewModel.sessionBackendLabel)
+                .font(XP.font(size: 11, bold: true))
+                .foregroundStyle(XP.textHeader)
+            if viewModel.sessionToolCount > 0 {
+                Text("·")
+                    .font(XP.font(size: 11))
+                    .foregroundStyle(XP.textSecondary.opacity(0.6))
+                Text("\(viewModel.sessionToolCount)")
+                    .font(XP.font(size: 11, bold: true))
+                    .foregroundStyle(XP.textSecondary)
+                    .monospacedDigit()
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(XP.bubbleFill)
+                .overlay(Capsule().stroke(XP.bubbleBorder, lineWidth: 1))
+                .shadow(color: XP.bubbleShadow, radius: 4, x: 0, y: 2)
+        )
+        .fixedSize()
+    }
 }
 
 private struct RightClickCatcher: NSViewRepresentable {
