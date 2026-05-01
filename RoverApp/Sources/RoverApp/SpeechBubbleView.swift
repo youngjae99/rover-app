@@ -42,11 +42,14 @@ struct SpeechBubbleView: View {
                     Color.clear.frame(height: 1).id("bubbleBottom")
                 }
                 .frame(maxHeight: viewModel.maxBubbleScrollHeight)
-                .onChange(of: viewModel.responseText) { _, _ in
+                .onChange(of: viewModel.transcript.last?.text) { _, _ in
+                    proxy.scrollTo("bubbleBottom", anchor: .bottom)
+                }
+                .onChange(of: viewModel.transcript.count) { _, _ in
                     proxy.scrollTo("bubbleBottom", anchor: .bottom)
                 }
                 .onChange(of: viewModel.bubbleMode) { _, newMode in
-                    if newMode == .input {
+                    if newMode == .input, !viewModel.hasTranscript {
                         proxy.scrollTo("bubbleTop", anchor: .top)
                     }
                 }
@@ -74,15 +77,17 @@ struct SpeechBubbleView: View {
 
     @ViewBuilder
     private var scrollableContent: some View {
-        switch viewModel.bubbleMode {
-        case .hidden:
-            EmptyView()
-        case .input:
+        // The bubble shows the transcript whenever there is one, regardless
+        // of mode. Starters only appear when the conversation is empty AND
+        // the bubble is in input mode (i.e. fresh state, never asked).
+        if viewModel.hasTranscript {
+            transcriptContent
+        } else if viewModel.bubbleMode == .input {
             inputContent
-        case .streaming, .showing:
-            responseContent
-        case .error(let text):
+        } else if case .error(let text) = viewModel.bubbleMode {
             errorContent(text)
+        } else {
+            EmptyView()
         }
     }
 
@@ -120,10 +125,10 @@ struct SpeechBubbleView: View {
         }
     }
 
-    // MARK: - response mode
+    // MARK: - transcript
 
-    private var responseContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private var transcriptContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 if case .streaming = viewModel.bubbleMode {
                     ProgressView()
@@ -144,26 +149,19 @@ struct SpeechBubbleView: View {
                     .foregroundStyle(.red.opacity(0.85))
                     .cursor(.pointingHand)
                 } else {
-                    Button {
-                        viewModel.bubbleMode = .input
-                        viewModel.responseText = ""
-                    } label: {
+                    Button { viewModel.newConversation() } label: {
                         Image(systemName: "arrow.uturn.left")
                             .font(.system(size: 10))
                     }
                     .buttonStyle(.borderless)
                     .foregroundStyle(XP.textSecondary)
+                    .help(s.menuNewConversation)
                     .cursor(.pointingHand)
                 }
             }
 
-            if !viewModel.responseText.isEmpty {
-                Text(viewModel.responseText)
-                    .font(XP.font(size: 13))
-                    .foregroundStyle(XP.textBody)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
+            ForEach(viewModel.transcript) { item in
+                TranscriptRow(item: item)
             }
         }
     }
@@ -390,4 +388,103 @@ private struct BubbleTextField: NSViewRepresentable {
 
 private final class ResponderField: NSTextField {
     override var acceptsFirstResponder: Bool { true }
+}
+
+// MARK: - TranscriptRow
+
+private struct TranscriptRow: View {
+    let item: TranscriptItem
+
+    var body: some View {
+        switch item.kind {
+        case .user:
+            HStack(alignment: .top, spacing: 6) {
+                Text("you")
+                    .font(XP.font(size: 10, bold: true))
+                    .foregroundStyle(XP.accent)
+                    .padding(.top, 2)
+                Text(item.text)
+                    .font(XP.font(size: 13))
+                    .foregroundStyle(XP.textBody)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+
+        case .assistant:
+            Text(item.text + (item.streaming ? "▌" : ""))
+                .font(XP.font(size: 13))
+                .foregroundStyle(XP.textBody)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+
+        case .reasoning:
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "ellipsis.bubble")
+                    .font(.system(size: 9))
+                    .foregroundStyle(XP.textSecondary.opacity(0.7))
+                    .padding(.top, 3)
+                Text(item.text + (item.streaming ? "▌" : ""))
+                    .font(XP.font(size: 12).italic())
+                    .foregroundStyle(XP.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+            .padding(.vertical, 2)
+            .padding(.horizontal, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.black.opacity(0.04))
+            )
+
+        case .toolCall:
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Image(systemName: "hammer.fill")
+                    .font(.system(size: 9))
+                    .foregroundStyle(XP.accent)
+                Text(item.text)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(XP.accent)
+                if let meta = item.meta, !meta.isEmpty {
+                    Text(meta)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(XP.textSecondary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                }
+                Spacer(minLength: 0)
+            }
+
+        case .toolError:
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.orange)
+                Text(item.text)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(.orange)
+                Spacer(minLength: 0)
+            }
+
+        case .status:
+            Text(item.text)
+                .font(XP.font(size: 12))
+                .foregroundStyle(XP.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+        case .error:
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "xmark.octagon.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.red)
+                Text(item.text)
+                    .font(XP.font(size: 12))
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
 }

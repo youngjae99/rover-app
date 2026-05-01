@@ -3,6 +3,7 @@ import Foundation
 enum ClaudeEvent {
     case status(String)
     case textDelta(String)
+    case thinkingDelta(String)
     case toolUse(name: String, input: String?)
     case toolResult(text: String, isError: Bool)
     case complete(result: String, costUSD: Double?, durationMS: Int?)
@@ -201,10 +202,19 @@ final class ClaudeRunner {
               let eventType = event["type"] as? String else { return }
         switch eventType {
         case "content_block_delta":
-            if let delta = event["delta"] as? [String: Any],
-               delta["type"] as? String == "text_delta",
-               let text = delta["text"] as? String {
-                onEvent?(.textDelta(text))
+            guard let delta = event["delta"] as? [String: Any],
+                  let deltaType = delta["type"] as? String else { return }
+            switch deltaType {
+            case "text_delta":
+                if let text = delta["text"] as? String {
+                    onEvent?(.textDelta(text))
+                }
+            case "thinking_delta":
+                if let text = delta["thinking"] as? String {
+                    onEvent?(.thinkingDelta(text))
+                }
+            default:
+                break
             }
         default:
             break

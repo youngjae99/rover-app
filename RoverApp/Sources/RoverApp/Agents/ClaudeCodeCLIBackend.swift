@@ -44,6 +44,8 @@ final class ClaudeCodeCLIBackend: AgentBackend {
             onEvent?(.statusChanged(s))
         case .textDelta(let t):
             onEvent?(.textDelta(t))
+        case .thinkingDelta(let t):
+            onEvent?(.reasoning(t))
         case .toolUse(let name, let summary):
             onEvent?(.observabilityToolCall(name: name, summary: summary))
         case .toolResult(_, let isError):

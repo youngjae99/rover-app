@@ -9,13 +9,39 @@ enum BubbleMode: Equatable {
     case error(String)
 }
 
+enum TranscriptKind: Equatable {
+    case user
+    case assistant
+    case reasoning
+    case toolCall
+    case toolError
+    case status
+    case error
+}
+
+struct TranscriptItem: Identifiable, Equatable {
+    let id = UUID()
+    var kind: TranscriptKind
+    var text: String
+    var meta: String? = nil
+    /// True while text is still being filled in by streaming events.
+    /// Flipped to false when the next item of a different kind arrives,
+    /// or when the turn completes.
+    var streaming: Bool = false
+}
+
 @MainActor
 final class AppViewModel: ObservableObject {
     @Published var bubbleMode: BubbleMode = .hidden
     @Published var inputText: String = ""
-    @Published var responseText: String = ""
     @Published var statusText: String = ""
     @Published var roverState: RoverState = .idle
+
+    /// Chronological log of every event the active backend produced this
+    /// conversation. Cleared on `newConversation()`. Each user turn appends
+    /// a `.user` item, then the backend's events stream in as
+    /// `.reasoning`, `.toolCall`, `.assistant`, etc.
+    @Published var transcript: [TranscriptItem] = []
 
     /// Maximum height the speech bubble's scrollable region can occupy.
     /// AppDelegate updates this whenever the window moves or the screen
@@ -46,17 +72,15 @@ final class AppViewModel: ObservableObject {
             bubbleMode = .input
             return
         }
-        // Animation-only / hint-only trigger.
         roverState = .getAttention
         if let hint = ctx.promptHint, !hint.isEmpty {
-            responseText = hint
+            push(TranscriptItem(kind: .status, text: hint))
             bubbleMode = .showing
             bubbleHideTimer = Timer.scheduledTimer(withTimeInterval: 6, repeats: false) { [weak self] _ in
                 Task { @MainActor in
                     guard let self else { return }
                     if case .showing = self.bubbleMode {
                         self.bubbleMode = .hidden
-                        self.responseText = ""
                     }
                 }
             }
@@ -67,6 +91,8 @@ final class AppViewModel: ObservableObject {
         if case .streaming = bubbleMode { return true }
         return false
     }
+
+    var hasTranscript: Bool { !transcript.isEmpty }
 
     func toggleBubble() {
         cancelBubbleHide()
@@ -80,7 +106,6 @@ final class AppViewModel: ObservableObject {
             inputText = ""
         case .showing, .error:
             bubbleMode = .input
-            responseText = ""
         case .streaming:
             cancelStream()
         }
@@ -99,16 +124,15 @@ final class AppViewModel: ObservableObject {
         if isStreaming { return }
         bubbleMode = .hidden
         inputText = ""
-        responseText = ""
     }
 
     /// Drop the conversation history so the next prompt starts a fresh
-    /// Claude Code session (no `--resume`). Visible bubble state is also
-    /// cleared so the input mode shows starters again.
+    /// Claude Code session (no `--resume`). The bubble returns to the
+    /// "starters + input" state.
     func newConversation() {
         if isStreaming { coordinator.cancel() }
         coordinator.newConversation()
-        responseText = ""
+        transcript = []
         statusText = ""
         bubbleMode = .input
         roverState = .getAttention
@@ -123,7 +147,7 @@ final class AppViewModel: ObservableObject {
         let prompt = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty, !isStreaming else { return }
         inputText = ""
-        responseText = ""
+        push(TranscriptItem(kind: .user, text: prompt))
         statusText = settings.s.statusThinking
         bubbleMode = .streaming
         roverState = .startSpeak
@@ -133,7 +157,8 @@ final class AppViewModel: ObservableObject {
 
     func cancelStream() {
         coordinator.cancel()
-        bubbleMode = responseText.isEmpty ? .hidden : .showing
+        finalizeAllStreaming()
+        bubbleMode = transcript.isEmpty ? .hidden : .showing
         statusText = settings.s.statusCancelled
         roverState = .endSpeak
     }
@@ -165,28 +190,71 @@ final class AppViewModel: ObservableObject {
         case .statusChanged(let s):
             statusText = s
         case .textDelta(let text):
-            responseText += text
+            appendDelta(.assistant, text)
             if bubbleMode != .streaming { bubbleMode = .streaming }
-        case .reasoning:
-            break
-        case .observabilityToolCall(let name, _):
+        case .reasoning(let text):
+            appendDelta(.reasoning, text)
+        case .observabilityToolCall(let name, let summary):
             statusText = name.lowercased()
+            push(TranscriptItem(kind: .toolCall, text: name, meta: summary))
             SoundPlayer.shared.play("Tap.wav", volume: 0.25)
-        case .observabilityToolError:
-            break
+        case .observabilityToolError(let name):
+            push(TranscriptItem(kind: .toolError, text: name.isEmpty ? "tool error" : name))
         case .computerUseRequest(let action, _):
             statusText = action.shortLabel
+            push(TranscriptItem(kind: .toolCall, text: action.shortLabel))
             SoundPlayer.shared.play("Tap.wav", volume: 0.25)
         case .computerUseResult:
             break
         case .turnCompleted(let result, _, _):
-            if responseText.isEmpty { responseText = result }
+            finalizeAllStreaming()
+            if !result.isEmpty,
+               transcript.last?.kind != .assistant {
+                push(TranscriptItem(kind: .assistant, text: result))
+            }
             statusText = ""
-            bubbleMode = responseText.isEmpty ? .hidden : .showing
+            bubbleMode = transcript.isEmpty ? .hidden : .showing
             scheduleSleepCheck()
         case .error(let text):
+            finalizeAllStreaming()
+            push(TranscriptItem(kind: .error, text: text))
             statusText = ""
             bubbleMode = .error(text)
+        }
+    }
+
+    // MARK: - Transcript helpers
+
+    private func push(_ item: TranscriptItem) {
+        // Finalize the previous streaming item if it is a different kind,
+        // so streaming flag accurately reflects only the most recent
+        // continuous segment.
+        if let last = transcript.last,
+           last.streaming,
+           last.kind != item.kind {
+            var prev = last
+            prev.streaming = false
+            transcript[transcript.count - 1] = prev
+        }
+        transcript.append(item)
+    }
+
+    /// Append a streaming chunk to the most recent item of the same kind,
+    /// or start a new streaming item if the previous segment was a
+    /// different kind / not streaming.
+    private func appendDelta(_ kind: TranscriptKind, _ text: String) {
+        if let last = transcript.last, last.kind == kind, last.streaming {
+            var item = last
+            item.text += text
+            transcript[transcript.count - 1] = item
+            return
+        }
+        push(TranscriptItem(kind: kind, text: text, streaming: true))
+    }
+
+    private func finalizeAllStreaming() {
+        for i in transcript.indices where transcript[i].streaming {
+            transcript[i].streaming = false
         }
     }
 
