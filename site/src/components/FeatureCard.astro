@@ -1,0 +1,15 @@
+---
+interface Props {
+  emoji: string;
+  title: string;
+}
+const { emoji, title } = Astro.props;
+---
+
+<article class="rounded-xl bg-white p-5 ring-1 ring-slate-200/80">
+  <div class="mb-3 text-2xl leading-none">{emoji}</div>
+  <h3 class="mb-1.5 text-base font-semibold text-slate-900">{title}</h3>
+  <p class="text-[15px] leading-relaxed text-slate-600">
+    <slot />
+  </p>
+</article>

@@ -148,13 +148,11 @@ struct SpeechBubbleView: View {
                     .font(XP.font(size: 12, bold: true))
                     .foregroundStyle(XP.textSecondary)
                 Spacer()
+                // While streaming the header shows only the status. The
+                // stop affordance lives inside the prompt field below, where
+                // the user's eye already is.
                 if case .streaming = viewModel.bubbleMode {
-                    headerButton(
-                        symbol: "stop.fill",
-                        label: s.bubbleStopButton,
-                        tint: Color.red.opacity(0.85),
-                        action: { viewModel.cancelStream() }
-                    )
+                    EmptyView()
                 } else {
                     headerButton(
                         symbol: "arrow.counterclockwise",
@@ -245,6 +243,9 @@ struct SpeechBubbleView: View {
                 onCancel: { viewModel.dismissBubble() }
             )
             .frame(maxWidth: .infinity)
+            if viewModel.isStreaming {
+                stopButton
+            }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
@@ -256,6 +257,27 @@ struct SpeechBubbleView: View {
                         .stroke(XP.promptFieldBorder, lineWidth: 1)
                 )
         )
+    }
+
+    /// Compact red stop affordance pinned to the trailing edge of the
+    /// prompt field while a turn is streaming. The user's eye is already on
+    /// the input area, so this is where they expect a "kill the agent"
+    /// control.
+    private var stopButton: some View {
+        Button { viewModel.cancelStream() } label: {
+            Image(systemName: "stop.fill")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 18, height: 18)
+                .background(
+                    Circle()
+                        .fill(Color.red.opacity(0.85))
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help(s.bubbleStopButton)
+        .cursor(.pointingHand)
     }
 }
 

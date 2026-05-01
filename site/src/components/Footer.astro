@@ -1,0 +1,26 @@
+---
+import StartButton from "./StartButton.astro";
+import GhostButton from "./GhostButton.astro";
+import { footer, links } from "../content/copy";
+---
+
+<footer class="border-t border-slate-200 bg-white">
+  <div class="mx-auto max-w-4xl px-6 py-16 text-center">
+    <img
+      src="/rover-icon.png"
+      alt="Rover.app icon"
+      width="64"
+      height="64"
+      class="mx-auto mb-6 h-16 w-16 rounded-xl shadow-sm"
+    />
+    <p class="font-tahoma text-sm text-slate-700">{footer.tagline}</p>
+
+    <div class="mt-6 flex items-center justify-center gap-3">
+      <StartButton href={links.download} />
+      <GhostButton href={links.github} label="View on GitHub" />
+    </div>
+
+    <p class="mt-10 text-xs text-slate-500">{footer.disclaimer}</p>
+    <p class="mt-1 text-xs text-slate-400">{footer.copyright}</p>
+  </div>
+</footer>

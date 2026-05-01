@@ -1,0 +1,23 @@
+---
+import AppleLogo from "./AppleLogo.astro";
+
+interface Props {
+  href: string;
+  label?: string;
+  class?: string;
+}
+const { href, label = "Start your Rover", class: className = "" } = Astro.props;
+---
+
+<a
+  href={href}
+  download
+  class={`group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-xp-start px-5 py-2.5 font-tahoma text-[15px] font-bold text-white shadow-[0_2px_6px_rgb(42_132_56_/_0.35),inset_0_1px_0_rgb(255_255_255_/_0.45)] ring-1 ring-emerald-900/30 transition-transform duration-150 hover:-translate-y-px active:translate-y-0 ${className}`}
+>
+  <span
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent"
+  ></span>
+  <AppleLogo class="relative h-6 w-6 drop-shadow" />
+  <span class="relative">{label}</span>
+</a>

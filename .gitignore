@@ -31,3 +31,4 @@ rover/obj/
 .vscode/
 .idea/
 *.iml
+.gstack/

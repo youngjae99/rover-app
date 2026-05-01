@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /og/
+
+Sitemap: https://roverthe.dog/sitemap-index.xml

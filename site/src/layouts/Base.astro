@@ -1,0 +1,97 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  noindex?: boolean;
+}
+
+const {
+  title = "Rover.app — The Windows XP search dog, reborn for macOS",
+  description = "A macOS desktop pet that drives your coding agent. Claude Code, Codex, or Computer Use. Twenty-four animation states intact.",
+  ogImage = "/og-image.png",
+  noindex = false,
+} = Astro.props;
+
+const siteUrl = Astro.site ?? new URL("https://roverthe.dog");
+const canonical = new URL(Astro.url.pathname, siteUrl).href;
+const ogImageAbs = new URL(ogImage, siteUrl).href;
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Rover.app",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "macOS 14",
+  description,
+  image: ogImageAbs,
+  url: siteUrl.href,
+  downloadUrl:
+    "https://github.com/youngjae99/rover-app/releases/latest/download/Rover.dmg",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  author: {
+    "@type": "Person",
+    name: "Youngjae Jang",
+    url: "https://github.com/youngjae99",
+  },
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex ? (
+      <meta name="robots" content="noindex" />
+    ) : (
+      <meta name="robots" content="index, follow, max-image-preview:large" />
+    )}
+    <meta name="theme-color" content="#334fa8" />
+
+    {/* Favicons */}
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    {/* Fonts */}
+    <link rel="preconnect" href="https://rsms.me" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+
+    {/* Open Graph */}
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="Rover.app" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content={ogImageAbs} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Rover the Windows XP search dog, with the headline 'Rover is back.'" />
+
+    {/* Twitter */}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@YoungjaeJang99" />
+    <meta name="twitter:creator" content="@YoungjaeJang99" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageAbs} />
+    <meta name="twitter:image:alt" content="Rover the Windows XP search dog, with the headline 'Rover is back.'" />
+
+    {/* Structured data */}
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body class="bg-white text-slate-900 antialiased">
+    <slot />
+  </body>
+</html>

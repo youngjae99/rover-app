@@ -1,0 +1,13 @@
+{
+  "name": "Rover.app",
+  "short_name": "Rover",
+  "description": "The Windows XP search dog, reborn as a macOS desktop pet that drives your coding agent.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#ffffff",
+  "theme_color": "#334fa8",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

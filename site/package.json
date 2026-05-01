@@ -1,0 +1,22 @@
+{
+  "name": "site",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "sync-assets": "if [ -d ../docs ]; then mkdir -p public && cp ../docs/rover-hero.gif public/ && cp ../docs/rover-states-grid.png public/; fi",
+    "predev": "pnpm run sync-assets",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.2",
+    "@tailwindcss/vite": "^4.2.4",
+    "astro": "^6.2.1",
+    "tailwindcss": "^4.2.4"
+  }
+}

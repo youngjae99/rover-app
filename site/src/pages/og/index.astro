@@ -1,0 +1,81 @@
+---
+import "../../styles/global.css";
+import AppleLogo from "../../components/AppleLogo.astro";
+import { hero } from "../../content/copy";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>OG image source</title>
+    <link rel="preconnect" href="https://rsms.me" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #fff;
+      }
+      .og-frame {
+        width: 1200px;
+        height: 630px;
+        position: relative;
+        overflow: hidden;
+        background: #fff;
+      }
+      .og-rover {
+        image-rendering: pixelated;
+        -ms-interpolation-mode: nearest-neighbor;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="og-frame">
+      <div class="flex h-full w-full items-center px-20">
+        {/* Left: Rover sprite, scaled-up pixel art */}
+        <div class="flex w-[440px] shrink-0 items-center justify-center">
+          <img
+            src="/og-rover.png"
+            alt="Rover"
+            width="80"
+            height="80"
+            class="og-rover h-[420px] w-[420px]"
+          />
+        </div>
+
+        {/* Right: title block */}
+        <div class="flex flex-col gap-8 pl-2">
+          <h1
+            class="font-tahoma text-[110px] font-bold leading-none tracking-tight text-slate-900"
+          >
+            Rover is back.
+          </h1>
+          <p class="max-w-[600px] text-[28px] leading-snug text-slate-600">
+            {hero.sub}
+          </p>
+          <div class="flex items-center gap-3 text-[20px] font-medium text-slate-500">
+            <span>Claude Code</span>
+            <span class="text-slate-300">·</span>
+            <span>Codex</span>
+            <span class="text-slate-300">·</span>
+            <span>Computer Use</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Top-right macOS accent — the XP dog runs on Apple silicon now */}
+      <div class="absolute right-10 top-10 flex items-center gap-3 text-slate-700">
+        <AppleLogo class="h-9 w-9" />
+        <span class="font-tahoma text-[18px] font-bold">Rover.app</span>
+      </div>
+
+      {/* Bottom-right domain */}
+      <div class="absolute bottom-10 right-10 font-tahoma text-[20px] text-slate-400">
+        roverthe.dog
+      </div>
+    </div>
+  </body>
+</html>

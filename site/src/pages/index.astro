@@ -1,0 +1,87 @@
+---
+import Base from "../layouts/Base.astro";
+import Section from "../components/Section.astro";
+import SpeechBubble from "../components/SpeechBubble.astro";
+import XPWindow from "../components/XPWindow.astro";
+import StartButton from "../components/StartButton.astro";
+import GhostButton from "../components/GhostButton.astro";
+import FeatureCard from "../components/FeatureCard.astro";
+import Logos from "../components/Logos.astro";
+import Footer from "../components/Footer.astro";
+import { hero, features, states, links } from "../content/copy";
+---
+
+<Base>
+  {/* §1 — Hero */}
+  <Section class="pt-20 sm:pt-24">
+    <div class="grid items-center gap-6 sm:gap-8 md:grid-cols-[auto_1fr]">
+      <div class="flex justify-center md:justify-start">
+        <div class="relative w-60 pt-20">
+          <div class="absolute left-0 top-0 z-10">
+            <SpeechBubble tail="down-left" class="max-w-[14rem]">
+              {hero.bubble}
+            </SpeechBubble>
+          </div>
+          <img
+            src="/rover-hero.gif"
+            alt="Rover the dog, animated"
+            width="240"
+            height="240"
+            class="h-60 w-60 select-none"
+            decoding="async"
+          />
+        </div>
+      </div>
+
+      <div>
+        <h1 class="font-tahoma text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl">
+          {hero.headline}
+        </h1>
+        <p class="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">
+          {hero.sub}
+        </p>
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <StartButton href={links.download} />
+          <GhostButton href={links.github} label="View on GitHub" />
+        </div>
+      </div>
+    </div>
+  </Section>
+
+  {/* §2 — What he does (XP window chrome) */}
+  <Section>
+    <XPWindow title={features.title}>
+      <div class="grid gap-5 sm:grid-cols-3">
+        {features.cards.map((c) => (
+          <FeatureCard emoji={c.emoji} title={c.title}>
+            {c.body}
+          </FeatureCard>
+        ))}
+      </div>
+    </XPWindow>
+  </Section>
+
+  {/* §3 — The 24 states (clean, no XP chrome) */}
+  <Section>
+    <img
+      src="/rover-states-grid.png"
+      alt="Twenty-four Rover animation states"
+      width="1200"
+      height="400"
+      class="mx-auto w-full max-w-3xl rounded-lg ring-1 ring-slate-200/80"
+      loading="lazy"
+      decoding="async"
+    />
+    <p class="mx-auto mt-6 max-w-xl text-center text-[15px] leading-relaxed text-slate-600">
+      {states.caption}
+    </p>
+  </Section>
+
+  {/* §4 — Works with (grayscale logos) */}
+  <Section>
+    <Logos />
+  </Section>
+
+  {/* §5 — Footer */}
+  <Footer />
+</Base>

@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --color-xp-bubble: #e3ecf8;
+  --color-xp-border: #8da8d6;
+  --color-xp-accent: #334fa8;
+  --color-xp-ink: #1a2540;
+  --color-xp-titlebar-from: #3a73d8;
+  --color-xp-titlebar-mid: #2a5fc0;
+  --color-xp-start-light: #6dd07a;
+  --color-xp-start-mid: #3da94a;
+  --color-xp-start-dark: #2a8438;
+
+  --font-tahoma: Tahoma, Geneva, Verdana, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --shadow-xp: 0 1px 2px rgb(45 70 130 / 0.15), 0 4px 12px rgb(45 70 130 / 0.08);
+}
+
+html {
+  font-family: var(--font-sans);
+  color: #0e1320;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: #ffffff;
+}
+
+.bg-xp-titlebar {
+  background-image: linear-gradient(to bottom, #3a73d8 0%, #2a5fc0 50%, #3a73d8 100%);
+}
+
+.bg-xp-start {
+  background-image: linear-gradient(to bottom, #6dd07a 0%, #3da94a 45%, #2a8438 100%);
+}

@@ -1,0 +1,84 @@
+---
+interface Props {
+  title: string;
+  class?: string;
+}
+const { title, class: className = "" } = Astro.props;
+
+const titlebarBg =
+  "linear-gradient(180deg, #3D95FF 6.7%, #0372FF 10.36%, #0365F1 13.89%, #0053E1 25.84%, #0058EE 56.29%, #026AFE 74.1%, #026AFE 84.7%, #0060FC 90.79%, #0043CF 96.43%)";
+const titlebarShadow =
+  "inset 8px 0 5px -5px rgba(34,37,46,0.54), inset -8px 0 5px -5px rgba(0,15,102,0.66)";
+
+const helpBg = "linear-gradient(180deg, #245FF5 33%, #256BF8 66%)";
+const helpShadow =
+  "inset -2px -3px 5px #0844C3, inset 10px 2px 8px rgba(255,255,255,0.33)";
+const closeBg = "linear-gradient(180deg, #E46446 0%, #E65D32 100%)";
+const closeShadow =
+  "inset -2px -3px 5px #AA2300, inset 10px 2px 8px -2px rgba(255,255,255,0.1)";
+---
+
+<div
+  class={`overflow-hidden rounded-t-[8px] shadow-[0_4px_18px_rgba(0,15,102,0.22)] ${className}`}
+>
+  {/* Title bar */}
+  <div
+    class="relative flex h-[29px] items-center pr-1.5"
+    style={`background: ${titlebarBg}; box-shadow: ${titlebarShadow};`}
+  >
+    <div
+      class="flex-1 select-none px-3"
+      style="font-family: 'Trebuchet MS','Tahoma',sans-serif; font-weight:700; font-size:13px; line-height:15px; color:#FFFFFF; text-shadow: 1px 1px 0 rgba(0,0,0,0.5);"
+    >
+      {title}
+    </div>
+
+    {/* Trigram controls */}
+    <div class="flex items-center gap-1">
+      {/* Help (?) */}
+      <span
+        aria-hidden="true"
+        class="relative inline-block h-[19px] w-[19px] rounded-[2px] border border-white"
+        style={`background: ${helpBg}; box-shadow: ${helpShadow};`}
+      >
+        <span
+          class="absolute inset-0 flex items-center justify-center font-bold leading-none text-white"
+          style="font-family: Arial, sans-serif; font-size: 14px; padding-bottom: 2px;"
+          >?</span
+        >
+      </span>
+
+      {/* Close (X) */}
+      <span
+        aria-hidden="true"
+        class="relative inline-block h-[19px] w-[19px] rounded-[2px] border border-white"
+        style={`background: ${closeBg}; box-shadow: ${closeShadow};`}
+      >
+        <svg
+          class="absolute inset-0 m-auto"
+          width="9"
+          height="9"
+          viewBox="0 0 9 9"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M1 1 L8 8 M8 1 L1 8"
+            stroke="white"
+            stroke-width="1.6"
+            stroke-linecap="round"
+          />
+        </svg>
+      </span>
+    </div>
+  </div>
+
+  {/* Window frame: 3px coloured borders around the cream body */}
+  <div
+    class="border-l-[3px] border-r-[3px] border-b-[3px]"
+    style="border-left-color:#1255E7; border-right-color:#002EBE; border-bottom-color:#002EBE; box-shadow: inset 1px 0 0 0 rgba(255,255,255,0.25), inset -1px -1px 0 0 rgba(0,0,0,0.18);"
+  >
+    <div class="p-6 sm:p-10" style="background:#ECE9D8;">
+      <slot />
+    </div>
+  </div>
+</div>

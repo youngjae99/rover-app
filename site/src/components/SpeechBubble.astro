@@ -1,0 +1,39 @@
+---
+interface Props {
+  tail?: "down-left" | "down-right" | "none";
+  class?: string;
+}
+const { tail = "none", class: className = "" } = Astro.props;
+---
+
+<div
+  class={`relative inline-block rounded-2xl border border-xp-border bg-xp-bubble px-5 py-3 font-tahoma text-sm text-xp-ink shadow-[0_1px_2px_rgb(45_70_130_/_0.15),0_4px_12px_rgb(45_70_130_/_0.08)] ${className}`}
+>
+  <slot />
+
+  {tail === "down-left" && (
+    <>
+      <span
+        aria-hidden="true"
+        class="absolute -bottom-[10px] left-7 h-0 w-0 border-x-[10px] border-t-[10px] border-x-transparent border-t-xp-border"
+      ></span>
+      <span
+        aria-hidden="true"
+        class="absolute -bottom-[8px] left-[30px] h-0 w-0 border-x-[8px] border-t-[8px] border-x-transparent border-t-xp-bubble"
+      ></span>
+    </>
+  )}
+
+  {tail === "down-right" && (
+    <>
+      <span
+        aria-hidden="true"
+        class="absolute -bottom-[10px] right-7 h-0 w-0 border-x-[10px] border-t-[10px] border-x-transparent border-t-xp-border"
+      ></span>
+      <span
+        aria-hidden="true"
+        class="absolute -bottom-[8px] right-[30px] h-0 w-0 border-x-[8px] border-t-[8px] border-x-transparent border-t-xp-bubble"
+      ></span>
+    </>
+  )}
+</div>
