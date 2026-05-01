@@ -139,24 +139,19 @@ struct SpeechBubbleView: View {
                     .foregroundStyle(XP.textSecondary)
                 Spacer()
                 if case .streaming = viewModel.bubbleMode {
-                    Button {
-                        viewModel.cancelStream()
-                    } label: {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 10))
-                    }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.red.opacity(0.85))
-                    .cursor(.pointingHand)
+                    headerButton(
+                        symbol: "stop.fill",
+                        label: s.bubbleStopButton,
+                        tint: Color.red.opacity(0.85),
+                        action: { viewModel.cancelStream() }
+                    )
                 } else {
-                    Button { viewModel.newConversation() } label: {
-                        Image(systemName: "arrow.uturn.left")
-                            .font(.system(size: 10))
-                    }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(XP.textSecondary)
-                    .help(s.menuNewConversation)
-                    .cursor(.pointingHand)
+                    headerButton(
+                        symbol: "arrow.counterclockwise",
+                        label: s.bubbleNewConvButton,
+                        tint: XP.textSecondary,
+                        action: { viewModel.newConversation() }
+                    )
                 }
             }
 
@@ -164,6 +159,36 @@ struct SpeechBubbleView: View {
                 TranscriptRow(item: item)
             }
         }
+    }
+
+    /// Pill button used in the bubble header: icon + short label, plain
+    /// style so our `.cursor` modifier actually wins over the button's
+    /// own tracking area, and a soft tinted background so it's visible.
+    private func headerButton(symbol: String, label: String,
+                              tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: 10, weight: .semibold))
+                Text(label)
+                    .font(XP.font(size: 11, bold: true))
+            }
+            .foregroundStyle(tint)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(tint.opacity(0.10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .stroke(tint.opacity(0.25), lineWidth: 0.5)
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(label)
+        .cursor(.pointingHand)
     }
 
     private var headerText: String {

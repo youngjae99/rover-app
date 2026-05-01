@@ -45,6 +45,8 @@ struct AppStrings {
     var bubbleStreamingThinking: String { t("thinking", "생각 중") }
     var bubbleResponseHeader: String { t("rover", "rover") }
     var bubbleErrorTitle: String { t("oops", "oops") }
+    var bubbleStopButton: String { t("stop", "중단") }
+    var bubbleNewConvButton: String { t("new", "새 대화") }
 
     // MARK: status
     var statusThinking: String { t("thinking…", "생각 중…") }

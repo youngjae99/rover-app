@@ -42,7 +42,20 @@ enum XP {
 /// flips reliably even when the mouse moves quickly.
 extension View {
     func cursor(_ cursor: NSCursor) -> some View {
+        // Two layers, because either alone is unreliable:
+        //   1. NSTrackingArea/cursorRect via a transparent background view —
+        //      works for plain SwiftUI views (Text, HStack with .contentShape).
+        //   2. .onHover -> NSCursor.set — needed for SwiftUI Button when
+        //      the system style installs its own NSButton+tracking area
+        //      (notably .borderless), which overrides our cursor rect.
         background(CursorRectView(cursor: cursor))
+            .onHover { hovering in
+                if hovering {
+                    cursor.set()
+                } else {
+                    NSCursor.arrow.set()
+                }
+            }
     }
 }
 
